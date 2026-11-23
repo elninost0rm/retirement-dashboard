@@ -37,6 +37,9 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   real return, and the brokerage low point before 59½, with a portfolio sparkline.
 - **Live inputs** — every field and slider recalculates immediately. Ages stay
   in a valid order while you drag, and invalid numbers are flagged inline.
+- **Blank starting balances** — Brokerage start and TSP start load empty with a
+  greyed-out `Enter amount` prompt, so the published page shows nobody's real
+  figures. Type a number (or drag the slider) and the projection updates.
 - **Pension eligibility** — service start year (years are calculated
   automatically), VERA year/age/service, MRA+30 age/service, and the normal
   pension age.
@@ -84,11 +87,14 @@ return every input to its default — saved plans are kept.
 
 ## Accuracy
 
-The core balance math matches the original engine. The default scenario still
-bottoms out at **$700,175 at age 38** with a **3.8835% real return**. The age-95
-balance is lower than the old Tkinter app because the dashboard now phases in the
-spouse's Medicare cost at your age 62 and halves the household ACA cost for the
-one person still on it.
+The core balance math matches the original engine. With $350,000 brokerage and
+$280,000 TSP entered, the plan bottoms out at **$700,175 at age 38** with a
+**3.8835% real return**. The age-95 balance is lower than the old Tkinter app
+because the dashboard now phases in the spouse's Medicare cost at your age 62 and
+halves the household ACA cost for the one person still on it.
+
+The two starting balances are blank by default, so a fresh page shows an
+unfunded plan starting from $0 until you enter your own figures.
 
 The new pension paths were checked against hand calculations:
 

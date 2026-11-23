@@ -50,7 +50,10 @@ No build step or dependencies. The original Tkinter app is untouched.
 
 ## Current defaults and headline numbers
 
-- Balances: brokerage $350,000; TSP $280,000.
+- Balances: **blank on first load** — the two fields show a greyed-out
+  `Enter amount` prompt and are held as 0 so the published site shows no
+  personal figures. Enter $350,000 / $280,000 to reproduce the numbers below.
+  Their sliders run 0–$1,000,000 and 0–$800,000 with $10k ticks.
 - Contributions: brokerage $30,000/yr; TSP $14,000/yr.
 - Income: new job $32,000/yr; spouse $31,200/yr; high-3 $110,000.
 - Spending: base $56,400; ACA $3,792 (household); Medicare $10,000
@@ -64,10 +67,12 @@ No build step or dependencies. The original Tkinter app is untouched.
 - New-job gap 0 months; severance $0/mo for 1 month; new-job health coverage on.
 - Stress test off; projection through age 95.
 
-Results on defaults: **minimum portfolio $700,175 at age 38**; **age-95 balance
-$4,981,983**. The original Python/Tkinter app produced $5,014,739 at 95 because
-the dashboard now phases in Medicare at your age 62 (spouse turns 65) and halves
-the household ACA cost for the person still on it.
+Results with the balances filled in as $350,000 / $280,000: **minimum portfolio
+$700,175 at age 38**; **age-95 balance $4,981,983**. The original Python/Tkinter
+app produced $5,014,739 at 95 because the dashboard now phases in Medicare at
+your age 62 (spouse turns 65) and halves the household ACA cost for the person
+still on it. With the balances blank the plan starts from $0, so the headline
+shows a low minimum and an early shortfall — expected, not a bug.
 
 ## Engine rules (`calculateScenario` in `index.html`)
 
@@ -177,6 +182,9 @@ All figures are in today's dollars. Balances grow at
 7. Return/inflation ticks are 0.5%.
 8. Published to GitHub Pages from a public repo; `.gitignore` keeps the
    PyInstaller artifacts out. Pushes to `main` redeploy the live site.
+9. Brokerage and TSP starting balances ship **blank** with an `Enter amount`
+   placeholder so the public page shows no personal figures; blank is stored as
+   0 and both sliders keep a wide 0–$1M / 0–$800k range.
 
 ## Known assumptions / open items
 
