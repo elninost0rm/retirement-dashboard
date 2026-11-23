@@ -693,7 +693,7 @@ function niceStep(span, count) {
 }
 
 function renderChart(el, cfg) {
-  const W = 760, H = 300, L = 54, R = 14, T = 12, B = 30;
+  const W = 760, H = 312, L = 54, R = 14, T = 12, B = 48;
   const plotW = W - L - R, plotH = H - T - B;
   const allY = cfg.series.flatMap(s => s.pts.map(p => p[1]))
     .concat((cfg.hlines || []).map(h => h.y))
@@ -723,9 +723,9 @@ function renderChart(el, cfg) {
   const xCount = xMax <= 12 ? xMax : 6;
   const xStep = Math.max(1, Math.round(xMax / xCount));
   for (let v = 0; v <= xMax; v += xStep) {
-    out += `<text class="axis" x="${X(v).toFixed(1)}" y="${H - 9}" text-anchor="middle">${v}</text>`;
+    out += `<text class="axis" x="${X(v).toFixed(1)}" y="${H - 26}" text-anchor="middle">${v}</text>`;
   }
-  out += `<text class="axis" x="${(L + plotW / 2).toFixed(1)}" y="${H - 1}" text-anchor="middle">${esc(cfg.xLabel || "Year")}</text>`;
+  out += `<text class="axis" x="${(L + plotW / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(cfg.xLabel || "Year")}</text>`;
 
   if (yMin < 0) {
     out += `<line class="zero" x1="${L}" y1="${Y(0).toFixed(1)}" x2="${W - R}" y2="${Y(0).toFixed(1)}"/>`;
