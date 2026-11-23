@@ -89,18 +89,23 @@ All figures are in today's dollars. Balances grow at
 - Service years are **auto-calculated** from `service_start_year` at the layoff
   year: `serviceAtLayoff = max(0, layoffYear - serviceStartYear)`.
 - `nominalPension = high3 × serviceAtLayoff × (serviceAtLayoff < 20 ? 1.0% : 1.1%)`.
+- **No COLA before 62** for any regular FERS annuity. An immediate pension is
+  frozen in nominal dollars from its start age until 62, then COLA (so its
+  today's-dollar value falls each year before 62).
 - **VERA:** only when `layoffYear === veraYear` AND `layoffAge === veraAge` AND
-  service ≥ `veraService`. Starts at the VERA age; full nominal from the start,
-  erodes with inflation until the normal pension age (62), then COLA.
+  service ≥ `veraService`. Starts at the VERA age; nominal, eroding to 62, then
+  COLA.
 - **MRA+30:** when `layoffAge ≥ mraAge` and service ≥ `mraService`. Starts at the
-  layoff age with COLA from the start.
+  layoff age; nominal until 62, then COLA. Also pays the **FERS Supplement**
+  from the start age until 62, ≈ `ss_you × service/40`, with no COLA.
 - **Normal:** when `layoffAge ≥ normalPensionAge` and service ≥ 5. Starts at the
-  layoff age with COLA.
+  layoff age; COLA applies from 62.
 - **Deferred:** everything else. Starts at the normal pension age; the nominal
   amount is eroded from the actual leave year to that age.
 - Pension income is counted **while still working** the new job (bug fixed).
 - Example: VERA at 49 with 25 years = $30,250 nominal, $20,599 by 62; MRA+30 at
-  57 with 33 years = $39,930; deferred at 43 with 19 years = $11,919 at 62.
+  57 with 33 years = $39,930 nominal, $34,444 by 62, plus a $15,178/yr FERS
+  supplement until 62; deferred at 43 with 19 years = $11,919 at 62.
 
 ### Health
 
@@ -257,6 +262,13 @@ two pages match; the theme toggle then updates only the compound page.
     retirement; table columns could miss the total by $1; and unfunded spending
     after 59½ was dropped without a record. Spare "unfunded" is now surfaced in
     the hero, a banner, the row note and the shortfalls filter.
+15. Corrected the MRA+30 branch: regular FERS annuities get **no COLA before 62**,
+    so an immediate pension is now frozen in nominal dollars until then (it had
+    assumed COLA from day one). Added the **FERS Supplement** for MRA+30 —
+    `ss_you × service/40` from retirement to 62, no COLA — shown on the cash-flow
+    chart, tooltip, banner, hero hint and text summary. VERA is unaffected (it
+    already eroded to 62); the deferred and normal branches now share the same
+    no-COLA-before-62 rule.
 
 ## Known assumptions / open items
 
@@ -268,7 +280,11 @@ two pages match; the theme toggle then updates only the compound page.
   coverage is active, this needs refinement.
 - No income taxes, RMDs, survivor scenario, long-term care, other assets/income,
   ACA subsidies, IRMAA, or medical inflation.
-- Pension COLA is assumed full after the start (FERS COLA reductions not modeled).
+- Pension COLA is assumed full from age 62 (FERS COLA reductions when inflation
+  is low are not modeled). No COLA is paid before 62.
+- The MRA+30 **FERS supplement** is modeled gross — `ss_you × service/40` until
+  62. The earnings test (reduction for wages above the annual exempt amount) and
+  any non-civilian service rules are not applied.
 - Spouse age gap is fixed at 3 years older.
 - SS claim ages are fixed at 62; no early/late benefit adjustment.
 - Horizon is your age 95; no separate spouse horizon.
@@ -281,7 +297,8 @@ two pages match; the theme toggle then updates only the compound page.
 - Balances 350k/280k, age 39 (default birth date): min **$700,175**, real
   **3.8835%**, end at 95 **$4,198,936**.
 - VERA 49/25: **$30,250** nominal → **$20,599** by 62.
-- MRA+30 57/33: **$39,930**, COLA from 57.
+- MRA+30 57/33: **$39,930** nominal → **$34,444** by 62 after 5 years without
+  COLA; FERS supplement **$15,178**/yr from 57 to 62.
 - Deferred 43/19: **$11,919** at 62.
 - Engine audit (run headless from `index.html`): 57/57 years identical to
   `retirement_gui.py` with rules aligned (no FEHB, no new-job coverage,

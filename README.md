@@ -78,8 +78,9 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
 - **Portfolio chart** — stacked brokerage/TSP areas, a total line, milestone
   markers, the stress window, and hover details. With the stress test on, the
   no-stress path is overlaid as a dashed comparison line.
-- **Cash-flow chart** — guaranteed income (pension + Social Security) against
-  spending from retirement onward, with the portfolio draw shaded.
+- **Cash-flow chart** — guaranteed income (pension + Social Security + the FERS
+  supplement, for MRA+30 plans) against spending from retirement onward, with the
+  portfolio draw shaded.
 - **Key moments** — every milestone (layoff, pension start, retirement, SS, TSP
   access, Medicare, mortgage payoff) with the portfolio value at that age. Click
   one to jump to the year in the table.
@@ -123,7 +124,8 @@ unfunded plan starting from $0 until you enter your own figures.
 The new pension paths were checked against hand calculations:
 
 - **VERA at 49** with 25 years: $30,250 nominal, eroding to $20,599 by 62.
-- **MRA+30 at 57** with 33 years: $39,930, COLA from 57.
+- **MRA+30 at 57** with 33 years: $39,930 nominal, eroding to $34,444 by 62,
+  plus a FERS supplement of $15,178/yr until 62.
 - **Deferred at 43** with 19 years: $11,919 at 62.
 
 The engine was then audited outside the browser and compared year by year against
@@ -157,16 +159,18 @@ silently absorbed.
 - **Pension paths:**
   - **VERA:** only when the layoff year equals the VERA year, the layoff age
     equals the VERA age, and service meets the minimum. Starts at the VERA age;
-    the full nominal amount erodes with inflation until the normal pension age,
-    then gets COLA.
+    the full nominal amount erodes with inflation until 62, then gets COLA.
   - **MRA+30:** when the layoff age is at least the MRA age and service meets the
-    minimum. Starts at the layoff age with COLA from the start.
+    minimum. Starts at the layoff age; nominal until COLA begins at 62. Also pays
+    the **FERS Supplement** (about SS × service/40) from retirement to 62.
   - **Normal:** at or after the normal pension age with at least 5 years. Starts
-    at the layoff age with COLA.
+    at the layoff age; COLA applies from 62.
   - **Deferred:** everything else. Starts at the normal pension age, with the
     nominal amount eroded from the leave year to that age.
 - The spouse is modeled as 3 years older; spouse Social Security starts at your
   age 59, yours at 62.
+- The FERS supplement (MRA+30 plans) is modeled gross, before the earnings test;
+  it ends at 62 and has no COLA.
 - **Health costs:** zero while anyone is working. Retiring on an **immediate**
   annuity (VERA, MRA+30, or normal) keeps **FEHB**: the household FEHB premium is
   paid from the retirement year for life, with Medicare added as each of you turns
