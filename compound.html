@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0e2740">
+<title>Compounding &amp; Withdrawal Calculator</title>
+<style>
+  /* ============================== tokens ============================== */
+  :root{
+    color-scheme: light;
+    --bg:#eef2f6;
+    --glow-1:#e0ebf6;
+    --glow-2:#e4f1ed;
+    --appbar-bg:rgba(238,242,246,.84);
+    --card:#ffffff;
+    --card-2:#f8fafc;
+    --card-3:#f1f5f9;
+    --tab-on:#ffffff;
+    --ink:#0d1e2e;
+    --ink-2:#3a4f63;
+    --muted:#6f8397;
+    --line:#e3eaf1;
+    --line-2:#d3dfea;
+    --navy:#12324f;
+    --navy-2:#2f7ba8;
+    --teal:#0d9488;
+    --gold:#a97a12;
+    --red:#b83b2f;
+    --green:#177a55;
+    --hero-1:#0d2438;
+    --hero-2:#1a4a6c;
+    --hero-3:#286a91;
+    --chart-brok:#2f7ba8;
+    --chart-tsp:#0d9488;
+    --chart-total:#12324f;
+    --chart-spend:#b5652d;
+    --info-bg:#eef7fd; --info-line:#cfe4f3; --info-ink:#1d5c85;
+    --warn-bg:#fff8e8; --warn-line:#f0dcb0; --warn-ink:#8a5a08;
+    --bad-bg:#fdf0ee;  --bad-line:#f2c9c3;  --bad-ink:#8f2b21;
+    --good-bg:#eefaf3; --good-line:#c6e8d6; --good-ink:#15603f;
+    --shadow-sm:0 1px 2px rgba(13,30,46,.05);
+    --shadow:0 1px 2px rgba(13,30,46,.04), 0 12px 32px -20px rgba(13,30,46,.34);
+    --radius:16px;
+    --radius-sm:10px;
+  }
+  [data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#070e16;
+    --glow-1:#0b1826;
+    --glow-2:#081817;
+    --appbar-bg:rgba(7,14,22,.85);
+    --card:#0e1925;
+    --card-2:#0a131d;
+    --card-3:#16222f;
+    --tab-on:#1b2937;
+    --ink:#e8eff7;
+    --ink-2:#b8c8d7;
+    --muted:#8298ac;
+    --line:#1c2a37;
+    --line-2:#2a3a4a;
+    --navy:#d3e5f5;
+    --navy-2:#5aa9d6;
+    --teal:#2dd4bf;
+    --gold:#e0b34a;
+    --red:#f08a7d;
+    --green:#4ade80;
+    --hero-1:#06131f;
+    --hero-2:#0c2c44;
+    --hero-3:#134f6d;
+    --chart-brok:#4fa3d1;
+    --chart-tsp:#2dd4bf;
+    --chart-total:#cfe3f5;
+    --chart-spend:#e0a15c;
+    --info-bg:#0c2131; --info-line:#1d3a51; --info-ink:#93c8e9;
+    --warn-bg:#261f0f; --warn-line:#463715; --warn-ink:#eac970;
+    --bad-bg:#2a1413; --bad-line:#48231f; --bad-ink:#f3a89e;
+    --good-bg:#0d2419; --good-line:#1d4630; --good-ink:#7ee0a8;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 18px 40px -24px rgba(0,0,0,.9);
+  }
+
+  /* ============================== base ============================== */
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;min-height:100vh;color:var(--ink);
+    background:
+      radial-gradient(1100px 420px at 10% -10%, var(--glow-1) 0%, rgba(0,0,0,0) 68%),
+      radial-gradient(900px 380px at 96% -14%, var(--glow-2) 0%, rgba(0,0,0,0) 70%),
+      var(--bg);
+    font:14px/1.45 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.012em}
+  a{color:var(--navy-2)}
+
+  /* ============================== app bar ============================== */
+  .appbar{
+    position:sticky;top:0;z-index:50;
+    background:var(--appbar-bg);
+    backdrop-filter:blur(14px) saturate(140%);
+    -webkit-backdrop-filter:blur(14px) saturate(140%);
+    border-bottom:1px solid var(--line);
+  }
+  .appbar-inner{
+    max-width:1580px;margin:0 auto;padding:10px 20px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0;text-decoration:none;color:inherit}
+  .brand-mark{
+    width:38px;height:38px;border-radius:12px;flex:none;
+    background:linear-gradient(140deg,#12324f,#0d9488 70%,#22b3a5);
+    display:grid;place-items:center;color:#fff;
+    box-shadow:0 8px 18px -8px rgba(18,50,79,.75), inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .brand-text{min-width:0}
+  .brand-text strong{display:block;font-size:15px;font-weight:650;letter-spacing:-.015em;white-space:nowrap}
+  .brand-text span{display:block;font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .apptabs{
+    border-bottom:1px solid var(--line);
+    background:var(--appbar-bg);
+    backdrop-filter:blur(14px) saturate(140%);
+    -webkit-backdrop-filter:blur(14px) saturate(140%);
+  }
+  .apptabs-inner{max-width:1580px;margin:0 auto;padding:0 20px;display:flex;gap:2px}
+  .apptabs a{
+    padding:9px 13px;font-size:12px;font-weight:650;color:var(--muted);
+    text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .apptabs a:hover{color:var(--ink-2)}
+  .apptabs a[aria-current]{color:var(--ink);border-bottom-color:var(--navy-2)}
+  .appbar-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;
+    border-radius:9px;border:1px solid var(--line-2);background:var(--card);
+    color:var(--ink-2);font:inherit;font-size:12px;font-weight:600;
+    padding:6px 11px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;
+  }
+  .btn:hover{background:var(--card-3);color:var(--ink)}
+  .icon-btn{
+    width:34px;height:34px;border-radius:9px;border:1px solid var(--line-2);
+    background:var(--card);color:var(--ink-2);display:grid;place-items:center;
+    cursor:pointer;transition:background .15s,color .15s;
+  }
+  .icon-btn:hover{background:var(--card-3);color:var(--ink)}
+  .icon-btn svg{width:16px;height:16px}
+
+  /* ============================== layout ============================== */
+  .shell{max-width:1240px;margin:0 auto;padding:22px 20px 60px}
+  .intro{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  .intro h1{font-size:22px}
+  .intro p{margin:4px 0 0;color:var(--muted);font-size:12.5px}
+  .sub-tabs{display:flex;gap:3px;padding:3px;border-radius:10px;background:var(--card-3);border:1px solid var(--line);flex:none}
+  .sub-tabs button{
+    border:0;background:transparent;padding:6px 14px;border-radius:7px;
+    font:inherit;font-size:12px;font-weight:650;color:var(--muted);cursor:pointer;white-space:nowrap;
+  }
+  .sub-tabs button:hover{color:var(--ink-2)}
+  .sub-tabs button.active{background:var(--tab-on);color:var(--ink);box-shadow:0 1px 2px rgba(13,30,46,.12)}
+  .grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px;align-items:start}
+  .stack{display:grid;gap:16px}
+  .panel[hidden]{display:none}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm)}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .card-head h2{font-size:13.5px}
+  .card-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .card-body{padding:14px 16px}
+
+  /* ============================== fields ============================== */
+  .field{margin-bottom:12px}
+  .field:last-child{margin-bottom:0}
+  .field-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px}
+  .field-head label{font-size:11.5px;font-weight:550;color:var(--ink-2);line-height:1.3;min-width:0}
+  .val-wrap{
+    display:flex;align-items:center;gap:2px;flex:none;min-width:98px;justify-content:flex-end;
+    border:1px solid var(--line);border-radius:7px;background:var(--card-2);padding:1px 7px;
+    transition:border-color .15s,box-shadow .15s,background .15s;
+  }
+  .val-wrap:focus-within{border-color:var(--navy-2);box-shadow:0 0 0 3px rgba(47,123,168,.12);background:var(--card)}
+  .val-wrap.invalid{border-color:var(--red);box-shadow:0 0 0 3px rgba(184,59,47,.12)}
+  .val-wrap .prefix,.val-wrap .suffix{color:var(--muted);font-size:10.5px;flex:none}
+  .val-wrap input{
+    width:100%;min-width:0;border:0;background:transparent;outline:none;text-align:right;
+    font:inherit;font-size:12px;font-weight:650;color:var(--ink);
+    font-variant-numeric:tabular-nums;padding:3px 0;
+  }
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:20px;
+    background:transparent;cursor:pointer;display:block;margin-top:1px;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:5px;border-radius:99px;
+    background:linear-gradient(90deg,var(--navy-2) 0%,var(--navy-2) var(--fill,50%),var(--line) var(--fill,50%),var(--line) 100%);
+  }
+  input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--line)}
+  input[type=range]::-moz-range-progress{height:5px;border-radius:99px;background:var(--navy-2)}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--card);border:2px solid var(--navy-2);margin-top:-4.5px;
+    box-shadow:0 1px 3px rgba(13,30,46,.3);transition:transform .12s;
+  }
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12)}
+  input[type=range]::-moz-range-thumb{
+    width:12px;height:12px;border-radius:50%;background:var(--card);
+    border:2px solid var(--navy-2);box-shadow:0 1px 3px rgba(13,30,46,.3);
+  }
+
+  /* ============================== stats ============================== */
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border-radius:var(--radius);overflow:hidden}
+  .stat{background:var(--card);padding:14px 16px}
+  .stat .k{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-size:21px;font-weight:680;letter-spacing:-.02em;margin-top:5px;font-variant-numeric:tabular-nums}
+  .stat .s{font-size:11px;color:var(--muted);margin-top:3px}
+  .stat.good .v{color:var(--green)}
+  .stat.bad .v{color:var(--red)}
+
+  /* ============================== chart ============================== */
+  .chart-wrap{padding:6px 10px 4px}
+  .chart-wrap svg{width:100%;height:auto;display:block}
+  .axis{font-size:10px;fill:var(--muted);font-variant-numeric:tabular-nums}
+  .grid{stroke:var(--line);stroke-width:1}
+  .zero{stroke:var(--red);stroke-width:1;stroke-dasharray:4 4;opacity:.35}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:2px 16px 12px;font-size:10.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .swatch{width:9px;height:9px;border-radius:3px;flex:none}
+  .bar{width:14px;height:3px;border-radius:2px;flex:none}
+
+  /* ============================== table ============================== */
+  .table-wrap{max-height:340px;overflow:auto;border-top:1px solid var(--line)}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{padding:7px 10px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left}
+  thead th{
+    position:sticky;top:0;background:var(--card-2);color:var(--muted);
+    font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    border-bottom:1px solid var(--line);z-index:1;
+  }
+  tbody tr:nth-child(even){background:var(--card-2)}
+  tbody td{border-bottom:1px solid var(--line);color:var(--ink-2)}
+  tbody td:last-child{color:var(--ink)}
+  tr.is-safe td{background:var(--good-bg);color:var(--good-ink)}
+  tr.is-risk td{background:var(--bad-bg);color:var(--bad-ink)}
+  td.pos{color:var(--green)}
+  td.neg{color:var(--red)}
+
+  /* ============================== misc ============================== */
+  .note{font-size:11.5px;color:var(--muted);padding:10px 16px 14px;border-top:1px solid var(--line);line-height:1.5}
+  .banner{
+    display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;padding:10px 13px;
+    border-radius:var(--radius-sm);border:1px solid var(--bad-line);background:var(--bad-bg);
+    color:var(--bad-ink);font-size:12px;font-weight:550;
+  }
+  .banner[hidden]{display:none}
+  .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 16px 14px}
+  .inline label{font-size:11.5px;color:var(--ink-2)}
+  .inline input[type=number]{
+    width:96px;padding:5px 8px;border-radius:8px;border:1px solid var(--line-2);
+    background:var(--card-2);color:var(--ink);font:inherit;font-size:12px;font-weight:650;text-align:right;
+  }
+  .inline .check{font-size:11.5px;color:var(--muted)}
+  .inline .check.ok{color:var(--good-ink);font-weight:600}
+  .inline .check.bad{color:var(--bad-ink);font-weight:600}
+
+  @media (max-width:900px){
+    .grid{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr 1fr}
+    .stats .stat:last-child:nth-child(odd){grid-column:1 / -1}
+    .brand-text span{display:none}
+    .apptabs a{padding:8px 10px;font-size:11.5px}
+    .intro h1{font-size:19px}
+  }
+  @media (max-width:560px){
+    .appbar-inner{padding:9px 12px;gap:9px}
+    .brand-text{display:none}
+    .stats{grid-template-columns:1fr}
+    .shell{padding:16px 12px 48px}
+  }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <a class="brand" href="compound.html" aria-label="Compounding and Withdrawal Calculator">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 17l5-5 4 3 6-7"/><path d="M3 21h18"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong>Compounding &amp; Withdrawal Calculator</strong>
+        <span>Growth · draw-down · safe withdrawal rate</span>
+      </span>
+    </a>
+    <div class="appbar-actions">
+      <button class="btn" id="resetBtn" type="button" title="Reset this tab to its defaults">Reset</button>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch to dark mode"></button>
+    </div>
+  </div>
+</header>
+
+<nav class="apptabs" aria-label="Apps">
+  <div class="apptabs-inner">
+    <a href="index.html">Retirement plan</a>
+    <a href="compound.html" aria-current="page">Compounding &amp; withdrawals</a>
+  </div>
+</nav>
+
+<main class="shell">
+  <div class="intro">
+    <div>
+      <h1>Compounding &amp; withdrawal calculator</h1>
+      <p>Everything recalculates as you type. Withdrawal and safe-rate figures are in today's dollars.</p>
+    </div>
+    <div class="sub-tabs" role="tablist" aria-label="Calculator">
+      <button type="button" role="tab" data-tab="accum" aria-selected="true">Accumulation</button>
+      <button type="button" role="tab" data-tab="withdraw" aria-selected="false">Withdrawals</button>
+      <button type="button" role="tab" data-tab="swr" aria-selected="false">Safe rate</button>
+    </div>
+  </div>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <!-- ============================ accumulation ============================ -->
+  <section class="panel" id="panel-accum" role="tabpanel">
+    <div class="grid">
+      <div class="card">
+        <div class="card-head"><div><h2>Inputs</h2><div class="card-sub">Lump sum plus optional contributions</div></div></div>
+        <div class="card-body" id="fields-accum"></div>
+      </div>
+      <div class="stack">
+        <div class="stats" id="stats-accum"></div>
+        <div class="card">
+          <div class="card-head"><div><h2>Growth over time</h2><div class="card-sub">Nominal value against today's dollars</div></div></div>
+          <div class="chart-wrap" id="chart-accum"></div>
+          <div class="legend" id="legend-accum"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2>Year by year</h2><div class="card-sub" id="accum-sub">—</div></div></div>
+          <div class="table-wrap">
+            <table id="table-accum">
+              <thead><tr><th>Year</th><th>Contributed</th><th>Value</th><th>Real value</th><th>Interest</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ withdrawals ============================ -->
+  <section class="panel" id="panel-withdraw" role="tabpanel" hidden>
+    <div class="grid">
+      <div class="card">
+        <div class="card-head"><div><h2>Inputs</h2><div class="card-sub">Draw-down in today's dollars</div></div></div>
+        <div class="card-body" id="fields-withdraw"></div>
+      </div>
+      <div class="stack">
+        <div class="stats" id="stats-withdraw"></div>
+        <div class="card">
+          <div class="card-head"><div><h2>Balance over time</h2><div class="card-sub">Real balance against the nominal path</div></div></div>
+          <div class="chart-wrap" id="chart-withdraw"></div>
+          <div class="legend" id="legend-withdraw"></div>
+        </div>
+        <div class="card">
+          <div class="note" id="note-withdraw">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ safe rate ============================ -->
+  <section class="panel" id="panel-swr" role="tabpanel" hidden>
+    <div class="grid">
+      <div class="card">
+        <div class="card-head"><div><h2>Inputs</h2><div class="card-sub">How much can you draw for the full horizon</div></div></div>
+        <div class="card-body" id="fields-swr"></div>
+      </div>
+      <div class="stack">
+        <div class="stats" id="stats-swr"></div>
+        <div class="card">
+          <div class="card-head"><div><h2>Balance by withdrawal rate</h2><div class="card-sub">Each line is a fixed starting rate, held in real terms</div></div></div>
+          <div class="chart-wrap" id="chart-swr"></div>
+          <div class="legend" id="legend-swr"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2>Rate comparison</h2><div class="card-sub" id="swr-sub">—</div></div></div>
+          <div class="table-wrap">
+            <table id="table-swr">
+              <thead><tr><th>Rate</th><th>Per year</th><th>Per month</th><th>Outcome</th><th>Runs out</th><th>End balance</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="inline">
+            <label for="needInput">What if I need $</label>
+            <input id="needInput" type="number" inputmode="decimal" step="100" min="0" value="3000">
+            <label for="needInput">/month?</label>
+            <span class="check" id="needCheck"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ======================================================================
+   formatting
+   ====================================================================== */
+const NUM0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const NUM2 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = n => (Number(n) < 0 ? "-$" : "$") + NUM0.format(Math.abs(Number(n) || 0));
+const money2 = n => (Number(n) < 0 ? "-$" : "$") + NUM2.format(Math.abs(Number(n) || 0));
+const pct = n => (Number(n) * 100).toFixed(2) + "%";
+function compact(n) {
+  const a = Math.abs(n);
+  if (a >= 1e6) {
+    const v = n / 1e6;
+    return "$" + (Math.abs(v - Math.round(v)) < 1e-9 ? Math.round(v) : v.toFixed(1)) + "M";
+  }
+  if (a >= 1e3) return "$" + NUM0.format(Math.round(n / 1e3)) + "k";
+  return "$" + NUM0.format(Math.round(n));
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+/* ======================================================================
+   math (ported 1:1 from compound_calculator_v5.py)
+   ====================================================================== */
+function futureValue(principal, rate, years, contribution = 0) {
+  const r = rate / 100;
+  if (r === 0) return principal + contribution * years;
+  const growth = Math.pow(1 + r, years);
+  return principal * growth + contribution * ((growth - 1) / r);
+}
+function realValue(nominal, inflation, years) {
+  const i = inflation / 100;
+  return i ? nominal / Math.pow(1 + i, years) : nominal;
+}
+function realReturn(roiPct, inflPct) {
+  return (1 + roiPct / 100) / (1 + inflPct / 100) - 1;
+}
+function simulateWithdrawals(balance0, roi, inflation, years, withdrawal, contribution = 0, extraGrowth = 0) {
+  const r = realReturn(roi, inflation);
+  const i = inflation / 100;
+  let bal = balance0;
+  let w = withdrawal;
+  const real = [[0, bal]];
+  const nom = [[0, bal]];
+  let dep = null;
+  let total = 0;
+  for (let yr = 1; yr <= years; yr++) {
+    bal += contribution;
+    bal *= (1 + r);
+    if (bal >= w) {
+      bal -= w;
+      total += w;
+      real.push([yr, bal]);
+      nom.push([yr, bal * Math.pow(1 + i, yr)]);
+    } else {
+      total += Math.max(bal, 0);
+      real.push([yr, 0]);
+      nom.push([yr, 0]);
+      dep = yr;
+      break;
+    }
+    w *= (1 + extraGrowth / 100);
+  }
+  return { real, nom, total, dep };
+}
+/** Exact rate that depletes `balance` to `target` in exactly `years`. */
+function safeWithdrawalRate(balance, roi, inflation, years, target = 0) {
+  const r = realReturn(roi, inflation);
+  if (years <= 0 || balance <= 0 || target >= balance) return { rate: 0, amount: 0 };
+  let w;
+  if (Math.abs(r) < 1e-12) w = (balance - target) / years;
+  else {
+    const growth = Math.pow(1 + r, years);
+    w = (balance * growth - target) * r / (growth - 1);
+  }
+  w = Math.max(w, 0);
+  return { rate: (w / balance) * 100, amount: w };
+}
+function simulateAtRate(balance, roi, inflation, years, ratePct) {
+  const r = realReturn(roi, inflation);
+  const w = balance * ratePct / 100;
+  let bal = balance;
+  const hist = [[0, bal]];
+  let dep = null;
+  for (let yr = 1; yr <= years; yr++) {
+    bal *= (1 + r);
+    if (bal >= w) {
+      bal -= w;
+      hist.push([yr, bal]);
+    } else {
+      hist.push([yr, 0]);
+      dep = yr;
+      break;
+    }
+  }
+  return { hist, dep };
+}
+
+/* ======================================================================
+   state
+   ====================================================================== */
+const SPECS = {
+  accum: [
+    { key: "principal", label: "Principal", unit: "$", def: 10000, min: 0, max: 1000000, step: 1000 },
+    { key: "roi", label: "Nominal return", unit: "%", def: 7, min: 0, max: 15, step: 0.5 },
+    { key: "years", label: "Years", unit: "yrs", def: 20, min: 1, max: 60, step: 1 },
+    { key: "inflation", label: "Inflation", unit: "%", def: 3, min: 0, max: 10, step: 0.5 },
+    { key: "contribution", label: "Annual contribution", unit: "$", def: 0, min: 0, max: 120000, step: 500 }
+  ],
+  withdraw: [
+    { key: "balance", label: "Starting balance", unit: "$", def: 500000, min: 0, max: 3000000, step: 5000 },
+    { key: "roi", label: "Nominal return", unit: "%", def: 7, min: 0, max: 15, step: 0.5 },
+    { key: "inflation", label: "Inflation", unit: "%", def: 3, min: 0, max: 10, step: 0.5 },
+    { key: "years", label: "Years to project", unit: "yrs", def: 30, min: 1, max: 60, step: 1 },
+    { key: "withdrawal", label: "Annual withdrawal", unit: "$", def: 30000, min: 0, max: 300000, step: 1000 },
+    { key: "contribution", label: "Annual contribution", unit: "$", def: 0, min: 0, max: 120000, step: 500 },
+    { key: "wg", label: "Withdrawal growth above inflation", unit: "%", def: 0, min: 0, max: 6, step: 0.5 }
+  ],
+  swr: [
+    { key: "balance", label: "Starting balance", unit: "$", def: 500000, min: 0, max: 3000000, step: 5000 },
+    { key: "roi", label: "Nominal return", unit: "%", def: 7, min: 0, max: 15, step: 0.5 },
+    { key: "inflation", label: "Inflation", unit: "%", def: 3, min: 0, max: 10, step: 0.5 },
+    { key: "years", label: "Years to last", unit: "yrs", def: 30, min: 1, max: 60, step: 1 },
+    { key: "target", label: "Target ending balance", unit: "$", def: 0, min: 0, max: 2000000, step: 5000 }
+  ]
+};
+const STORE_KEY = "compound-calculator-v1";
+
+const state = { tab: "accum", theme: "light", vals: {} };
+for (const tab of Object.keys(SPECS)) {
+  state.vals[tab] = {};
+  SPECS[tab].forEach(f => { state.vals[tab][f.key] = f.def; });
+}
+
+function loadStored() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && typeof s === "object") {
+        for (const tab of Object.keys(SPECS)) {
+          if (!s.vals || !s.vals[tab]) continue;
+          SPECS[tab].forEach(f => {
+            const v = Number(s.vals[tab][f.key]);
+            if (isFinite(v)) state.vals[tab][f.key] = v;
+          });
+        }
+        if (["accum", "withdraw", "swr"].includes(s.tab)) state.tab = s.tab;
+        if (s.theme === "dark" || s.theme === "light") state.theme = s.theme;
+      }
+      return;
+    }
+  } catch (e) { /* ignore */ }
+  // First visit: borrow the retirement dashboard's theme so the two pages match.
+  try {
+    const dash = JSON.parse(localStorage.getItem("retirement-dashboard-v2") || "null");
+    if (dash && dash.theme === "dark") state.theme = "dark";
+  } catch (e) { /* ignore */ }
+}
+let saveTimer = null;
+function saveState() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ tab: state.tab, theme: state.theme, vals: state.vals }));
+    } catch (e) { /* storage unavailable */ }
+  }, 200);
+}
+
+/* ======================================================================
+   controls
+   ====================================================================== */
+const $ = id => document.getElementById(id);
+const unitSuffix = unit => (unit === "$" || unit === "%") ? "" : unit;
+
+function setFill(range) {
+  const min = Number(range.min), max = Number(range.max), v = Number(range.value);
+  const p = max > min ? ((v - min) / (max - min)) * 100 : 0;
+  range.style.setProperty("--fill", clamp(p, 0, 100).toFixed(1) + "%");
+}
+function formatValue(field, v) {
+  if (field.unit === "%") return Number.isInteger(v) ? String(v) : v.toFixed(1);
+  if (field.unit === "yrs") return String(v);
+  return NUM0.format(v);
+}
+
+function buildFields(tab) {
+  const mount = $(`fields-${tab}`);
+  mount.innerHTML = SPECS[tab].map(f => {
+    const prefix = f.unit === "$" ? `<span class="prefix">$</span>` : "";
+    const suffix = f.unit === "%" ? `<span class="suffix">%</span>` : unitSuffix(f.unit) ? `<span class="suffix">${f.unit}</span>` : "";
+    return `
+      <div class="field">
+        <div class="field-head">
+          <label for="m_${tab}_${f.key}">${esc(f.label)}</label>
+          <div class="val-wrap">
+            ${prefix}
+            <input id="m_${tab}_${f.key}" data-tab="${tab}" data-key="${f.key}" inputmode="decimal" autocomplete="off" spellcheck="false">
+            ${suffix}
+          </div>
+        </div>
+        <input type="range" id="r_${tab}_${f.key}" data-tab="${tab}" data-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" title="Scroll to adjust">
+      </div>`;
+  }).join("");
+
+  SPECS[tab].forEach(f => {
+    const input = $(`m_${tab}_${f.key}`);
+    const range = $(`r_${tab}_${f.key}`);
+
+    const commit = () => {
+      const raw = input.value.replace(/[^0-9.\-]/g, "");
+      const num = raw === "" || raw === "-" || raw === "." ? NaN : Number(raw);
+      const wrap = input.closest(".val-wrap");
+      if (!isFinite(num)) {
+        wrap.classList.add("invalid");
+        return;
+      }
+      wrap.classList.remove("invalid");
+      state.vals[tab][f.key] = num;
+      range.value = clamp(num, Number(range.min), Number(range.max));
+      setFill(range);
+      saveState();
+      render();
+    };
+
+    input.addEventListener("input", commit);
+    input.addEventListener("focus", () => { input.value = String(state.vals[tab][f.key]); });
+    input.addEventListener("blur", () => {
+      if (isFinite(state.vals[tab][f.key])) input.value = formatValue(f, state.vals[tab][f.key]);
+      else { state.vals[tab][f.key] = f.def; input.value = formatValue(f, f.def); input.closest(".val-wrap").classList.remove("invalid"); }
+      range.value = clamp(state.vals[tab][f.key], Number(range.min), Number(range.max));
+      setFill(range);
+      render();
+    });
+    input.addEventListener("keydown", e => { if (e.key === "Enter") input.blur(); });
+    input.addEventListener("wheel", e => {
+      if (!e.deltaY) return;
+      e.preventDefault();
+      nudge(range, e);
+    }, { passive: false });
+
+    range.addEventListener("input", () => {
+      state.vals[tab][f.key] = Number(range.value);
+      input.value = formatValue(f, state.vals[tab][f.key]);
+      input.closest(".val-wrap").classList.remove("invalid");
+      setFill(range);
+      saveState();
+      render();
+    });
+    range.addEventListener("wheel", e => { e.preventDefault(); nudge(range, e); }, { passive: false });
+    setFill(range);
+  });
+}
+
+function nudge(range, e) {
+  const step = Number(range.step) || 1;
+  const dir = e.deltaY < 0 ? 1 : -1;
+  const next = clamp(Number(range.value) + dir * step * (e.shiftKey ? 10 : 1), Number(range.min), Number(range.max));
+  if (next === Number(range.value)) return;
+  range.value = next;
+  range.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function syncControls() {
+  const tab = state.tab;
+  SPECS[tab].forEach(f => {
+    const input = $(`m_${tab}_${f.key}`);
+    const range = $(`r_${tab}_${f.key}`);
+    if (!input || !range) return;
+    const v = state.vals[tab][f.key];
+    if (document.activeElement !== input) input.value = formatValue(f, v);
+    range.value = clamp(v, Number(range.min), Number(range.max));
+    setFill(range);
+  });
+}
+
+/* ======================================================================
+   svg line chart
+   ====================================================================== */
+function niceStep(span, count) {
+  if (!(span > 0)) return 1;
+  const raw = span / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+  return step * mag;
+}
+
+function renderChart(el, cfg) {
+  const W = 760, H = 300, L = 54, R = 14, T = 12, B = 30;
+  const plotW = W - L - R, plotH = H - T - B;
+  const allY = cfg.series.flatMap(s => s.pts.map(p => p[1]))
+    .concat((cfg.hlines || []).map(h => h.y))
+    .concat([0]);
+  let yMax = Math.max(...allY);
+  let yMin = Math.min(...allY);
+  if (yMax === yMin) yMax = yMin + 1;
+  const yPad = (yMax - yMin) * 0.06;
+  yMax += yPad;
+  if (yMin < 0) yMin -= yPad; else yMin = 0;
+
+  const xMax = cfg.xMax || Math.max(...cfg.series.map(s => Math.max(...s.pts.map(p => p[0]))), 1);
+  const xMin = 0;
+
+  const X = v => L + ((v - xMin) / (xMax - xMin)) * plotW;
+  const Y = v => T + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+
+  const yStep = niceStep(yMax - yMin, 5);
+  let out = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(cfg.label || "chart")}">`;
+
+  for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax + 1e-9; v += yStep) {
+    const y = Y(v).toFixed(1);
+    out += `<line class="grid" x1="${L}" y1="${y}" x2="${W - R}" y2="${y}"/>`;
+    out += `<text class="axis" x="${L - 8}" y="${(Number(y) + 3.5).toFixed(1)}" text-anchor="end">${compact(v)}</text>`;
+  }
+
+  const xCount = xMax <= 12 ? xMax : 6;
+  const xStep = Math.max(1, Math.round(xMax / xCount));
+  for (let v = 0; v <= xMax; v += xStep) {
+    out += `<text class="axis" x="${X(v).toFixed(1)}" y="${H - 9}" text-anchor="middle">${v}</text>`;
+  }
+  out += `<text class="axis" x="${(L + plotW / 2).toFixed(1)}" y="${H - 1}" text-anchor="middle">${esc(cfg.xLabel || "Year")}</text>`;
+
+  if (yMin < 0) {
+    out += `<line class="zero" x1="${L}" y1="${Y(0).toFixed(1)}" x2="${W - R}" y2="${Y(0).toFixed(1)}"/>`;
+  }
+
+  (cfg.hlines || []).forEach(h => {
+    const y = Y(h.y).toFixed(1);
+    out += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}" stroke="${h.color}" stroke-width="1.2" stroke-dasharray="${h.dash || "5 4"}" opacity=".65"/>`;
+    if (h.label) out += `<text class="axis" x="${W - R - 4}" y="${(Number(y) - 5).toFixed(1)}" text-anchor="end" fill="${h.color}">${esc(h.label)}</text>`;
+  });
+
+  cfg.series.forEach(s => {
+    if (!s.pts.length) return;
+    const d = s.pts.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(" ");
+    if (s.area) {
+      const base = Y(Math.max(yMin, 0)).toFixed(1);
+      out += `<path d="${d} L${X(s.pts[s.pts.length - 1][0]).toFixed(1)} ${base} L${X(s.pts[0][0]).toFixed(1)} ${base} Z" fill="${s.color}" opacity=".10"/>`;
+    }
+    out += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width || 2}" stroke-linejoin="round" stroke-linecap="round"${s.dash ? ` stroke-dasharray="${s.dash}"` : ""}${s.opacity != null ? ` opacity="${s.opacity}"` : ""}/>`;
+  });
+
+  (cfg.vlines || []).forEach(v => {
+    const x = X(v.x).toFixed(1);
+    out += `<line x1="${x}" y1="${T}" x2="${x}" y2="${T + plotH}" stroke="${v.color}" stroke-width="1.2" stroke-dasharray="3 4" opacity=".7"/>`;
+    if (v.label) out += `<text class="axis" x="${(Number(x) + 4).toFixed(1)}" y="${T + 12}" fill="${v.color}">${esc(v.label)}</text>`;
+  });
+
+  out += `</svg>`;
+  el.innerHTML = out;
+}
+
+function renderLegend(el, items) {
+  el.innerHTML = items.map(i => `<span><span class="swatch" style="background:${i.color};${i.dash ? `height:3px;border-radius:2px` : ""}"></span>${esc(i.label)}</span>`).join("");
+}
+
+/* ======================================================================
+   accumulation
+   ====================================================================== */
+function renderAccum() {
+  const v = state.vals.accum;
+  const P = v.principal, r = v.roi, n = Math.max(1, Math.round(v.years)), infl = v.inflation, c = v.contribution;
+
+  const rows = [];
+  let contributed = P;
+  for (let yr = 1; yr <= n; yr++) {
+    const fvv = futureValue(P, r, yr, c);
+    const prev = yr > 1 ? futureValue(P, r, yr - 1, c) : P;
+    contributed += c;
+    rows.push({ yr, contributed, value: fvv, real: realValue(fvv, infl, yr), interest: fvv - prev - c });
+  }
+  const last = rows[rows.length - 1];
+
+  $("stats-accum").innerHTML = `
+    <div class="stat"><div class="k">Nominal value</div><div class="v">${money(last.value)}</div><div class="s">after ${n} years</div></div>
+    <div class="stat"><div class="k">Today's dollars</div><div class="v">${money(last.real)}</div><div class="s">at ${infl}% inflation</div></div>
+    <div class="stat good"><div class="k">Interest earned</div><div class="v">${money(last.value - last.contributed)}</div><div class="s">${pct(last.value / Math.max(last.contributed, 1) - 1)} on money in</div></div>
+    <div class="stat"><div class="k">Total contributed</div><div class="v">${money(last.contributed)}</div><div class="s">principal + contributions</div></div>
+    <div class="stat"><div class="k">Buying power lost</div><div class="v">${money(last.value - last.real)}</div><div class="s">to inflation</div></div>
+    <div class="stat"><div class="k">Real return</div><div class="v">${(realReturn(r, infl) * 100).toFixed(2)}%</div><div class="s">${r}% nominal · ${infl}% inflation</div></div>`;
+
+  renderChart($("chart-accum"), {
+    label: "Growth over time",
+    xMax: n,
+    series: [
+      { pts: [[0, P], ...rows.map(d => [d.yr, d.value])], color: "var(--chart-brok)", width: 2.4, area: true, label: "Nominal" },
+      { pts: [[0, P], ...rows.map(d => [d.yr, d.real])], color: "var(--chart-tsp)", width: 2, dash: "6 4", label: "Today's dollars" }
+    ]
+  });
+  renderLegend($("legend-accum"), [
+    { color: "var(--chart-brok)", label: "Nominal balance" },
+    { color: "var(--chart-tsp)", label: "Real balance (today's $)" }
+  ]);
+
+  $("accum-sub").textContent = `${n} row${n === 1 ? "" : "s"} · interest is the growth in each year, excluding that year's contribution`;
+  $("table-accum").querySelector("tbody").innerHTML = rows.map(d => `
+    <tr>
+      <td>${d.yr}</td>
+      <td>${money(d.contributed)}</td>
+      <td>${money(d.value)}</td>
+      <td>${money(d.real)}</td>
+      <td class="${d.interest >= 0 ? "pos" : "neg"}">${money(d.interest)}</td>
+    </tr>`).join("");
+}
+
+/* ======================================================================
+   withdrawals
+   ====================================================================== */
+function renderWithdraw() {
+  const v = state.vals.withdraw;
+  const n = Math.max(1, Math.round(v.years));
+  const sim = simulateWithdrawals(v.balance, v.roi, v.inflation, n, v.withdrawal, v.contribution, v.wg);
+  const endReal = sim.real[sim.real.length - 1][1];
+  const yearsRun = sim.real[sim.real.length - 1][0];
+
+  $("stats-withdraw").innerHTML = `
+    <div class="stat ${sim.dep ? "bad" : "good"}"><div class="k">End balance</div><div class="v">${money(endReal)}</div><div class="s">today's dollars</div></div>
+    <div class="stat"><div class="k">Total withdrawn</div><div class="v">${money(sim.total)}</div><div class="s">over ${yearsRun} year${yearsRun === 1 ? "" : "s"}</div></div>
+    <div class="stat ${sim.dep ? "bad" : "good"}"><div class="k">Outcome</div><div class="v">${sim.dep ? "Runs out" : "Lasts"}</div><div class="s">${sim.dep ? `depleted in year ${sim.dep}` : `all ${n} years funded`}</div></div>`;
+
+  const series = [
+    { pts: sim.real, color: "var(--chart-brok)", width: 2.4, area: true, label: "Real balance" },
+    { pts: sim.nom, color: "var(--chart-total)", width: 1.4, dash: "6 4", opacity: .55, label: "Nominal balance" }
+  ];
+  renderChart($("chart-withdraw"), {
+    label: "Balance over time",
+    xMax: n,
+    series,
+    vlines: sim.dep ? [{ x: sim.dep, color: "var(--red)", label: `depleted yr ${sim.dep}` }] : []
+  });
+  renderLegend($("legend-withdraw"), [
+    { color: "var(--chart-brok)", label: "Real balance (today's $)" },
+    { color: "var(--chart-total)", label: "Nominal balance (future $)" }
+  ]);
+
+  const rr = realReturn(v.roi, v.inflation);
+  const note = $("note-withdraw");
+  const firstYear = v.withdrawal;
+  const lastYear = v.withdrawal * Math.pow(1 + v.wg / 100, Math.max(0, yearsRun - 1));
+  note.innerHTML = `
+    <b>${money(v.balance)}</b> start → <b>${money(endReal)}</b> at year ${yearsRun} in today's dollars ·
+    real return <b>${pct(rr)}</b> · withdrawal ${money(firstYear)}${v.wg ? ` rising to ${money(lastYear)}` : ""}
+    ${sim.dep ? `<br><b>Depleted in year ${sim.dep}</b> — the ${money(v.withdrawal)} draw is above what this balance sustains for ${n} years.` : `<br>Balance survives the full ${n} years with ${money(endReal)} left over.`}`;
+}
+
+/* ======================================================================
+   safe withdrawal rate
+   ====================================================================== */
+const SWR_RATES = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0];
+
+function renderSwr() {
+  const v = state.vals.swr;
+  const n = Math.max(1, Math.round(v.years));
+  const target = Math.max(0, v.target);
+  const banner = $("banner");
+
+  if (target >= v.balance && v.balance > 0) {
+    banner.hidden = false;
+    banner.textContent = "Target ending balance must be less than the starting balance.";
+  } else {
+    banner.hidden = true;
+  }
+
+  const { rate, amount } = safeWithdrawalRate(v.balance, v.roi, v.inflation, n, target);
+  const rr = realReturn(v.roi, v.inflation);
+  $("stats-swr").innerHTML = `
+    <div class="stat good"><div class="k">Safe withdrawal rate</div><div class="v">${rate.toFixed(2)}%</div><div class="s">lasts exactly ${n} years</div></div>
+    <div class="stat"><div class="k">Per year</div><div class="v">${money(amount)}</div><div class="s">today's dollars</div></div>
+    <div class="stat"><div class="k">Per month</div><div class="v">${money(amount / 12)}</div><div class="s">real return ${pct(rr)}</div></div>`;
+
+  const rows = SWR_RATES.map(rt => {
+    const annual = v.balance * rt / 100;
+    const sim = simulateAtRate(v.balance, v.roi, v.inflation, n, rt);
+    return {
+      rate: rt,
+      annual,
+      monthly: annual / 12,
+      dep: sim.dep,
+      final: sim.hist[sim.hist.length - 1][1],
+      safe: rt <= rate + 1e-9
+    };
+  });
+
+  $("swr-sub").textContent = `${money(v.balance)} for ${n} years · target ${target ? money(target) : "none"} · green rows are at or below ${rate.toFixed(2)}%`;
+  $("table-swr").querySelector("tbody").innerHTML = rows.map(d => `
+    <tr class="${d.safe ? "is-safe" : "is-risk"}">
+      <td>${d.rate.toFixed(1)}%</td>
+      <td>${money(d.annual)}</td>
+      <td>${money(d.monthly)}</td>
+      <td>${d.dep ? "Runs out" : "Lasts"}</td>
+      <td>${d.dep ? `Year ${d.dep}` : `Full ${n} yrs`}</td>
+      <td>${money(d.final)}</td>
+    </tr>`).join("");
+
+  const series = SWR_RATES.map((rt, i) => {
+    const sim = simulateAtRate(v.balance, v.roi, v.inflation, n, rt);
+    const strong = Math.abs(rt - rate) < 0.3;
+    return {
+      pts: sim.hist,
+      color: `hsl(${200 - i * 14} 62% ${52 - i * 2}%)`,
+      width: strong ? 2.6 : 1.2,
+      opacity: strong ? 1 : 0.5,
+      label: `${rt.toFixed(1)}%`
+    };
+  });
+  series.push({
+    pts: simulateAtRate(v.balance, v.roi, v.inflation, n, rate).hist,
+    color: "var(--ink)",
+    width: 2.6,
+    dash: "6 4",
+    label: `SWR ${rate.toFixed(2)}%`
+  });
+
+  renderChart($("chart-swr"), {
+    label: "Balance by withdrawal rate",
+    xMax: n,
+    series,
+    hlines: target > 0 ? [{ y: target, color: "var(--muted)", label: `target ${compact(target)}` }] : []
+  });
+  renderLegend($("legend-swr"), [
+    { color: "var(--ink)", label: `SWR ${rate.toFixed(2)}%` },
+    { color: "hsl(200 62% 52%)", label: "2.0% (slowest draw)" },
+    { color: "hsl(60 62% 42%)", label: "7.0% (fastest draw)" }
+  ]);
+
+  // "$X a month" checker
+  const need = Number($("needInput").value) || 0;
+  const needRate = v.balance > 0 ? (need * 12) / v.balance * 100 : 0;
+  const check = $("needCheck");
+  if (!need) {
+    check.className = "check";
+    check.textContent = "";
+  } else if (needRate <= rate) {
+    check.className = "check ok";
+    check.textContent = `${money(need * 12)}/yr = ${needRate.toFixed(2)}% — under the ${rate.toFixed(2)}% rate`;
+  } else {
+    check.className = "check bad";
+    check.textContent = `${money(need * 12)}/yr = ${needRate.toFixed(2)}% — ${(needRate - rate).toFixed(2)}% above ${rate.toFixed(2)}%`;
+  }
+}
+
+/* ======================================================================
+   render + tabs + theme
+   ====================================================================== */
+function render() {
+  if (state.tab === "accum") renderAccum();
+  else if (state.tab === "withdraw") renderWithdraw();
+  else renderSwr();
+}
+
+function setTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll(".sub-tabs button").forEach(b => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+  document.querySelectorAll(".panel").forEach(p => { p.hidden = p.id !== `panel-${tab}`; });
+  $("banner").hidden = true;
+  syncControls();
+  render();
+  saveState();
+}
+
+const SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
+const MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>`;
+
+function applyTheme() {
+  document.documentElement.dataset.theme = state.theme;
+  const btn = $("themeBtn");
+  btn.innerHTML = state.theme === "dark" ? SUN : MOON;
+  btn.setAttribute("aria-label", state.theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", state.theme === "dark" ? "#070e16" : "#0e2740");
+}
+
+function init() {
+  loadStored();
+  applyTheme();
+  Object.keys(SPECS).forEach(buildFields);
+
+  document.querySelectorAll(".sub-tabs button").forEach(b => {
+    b.addEventListener("click", () => setTab(b.dataset.tab));
+  });
+  $("themeBtn").addEventListener("click", () => {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    applyTheme();
+    saveState();
+  });
+  $("resetBtn").addEventListener("click", () => {
+    SPECS[state.tab].forEach(f => { state.vals[state.tab][f.key] = f.def; });
+    syncControls();
+    render();
+    saveState();
+  });
+  $("needInput").addEventListener("input", () => { if (state.tab === "swr") renderSwr(); });
+
+  setTab(state.tab);
+}
+init();
+</script>
+</body>
+</html>

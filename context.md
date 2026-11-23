@@ -40,6 +40,7 @@ No build step or dependencies. The original Tkinter app is untouched.
 | File | Purpose |
 | --- | --- |
 | `index.html` | Entire dashboard: HTML, CSS, JS, engine. |
+| `compound.html` | Second app: compounding / withdrawal / safe-rate calculator (ported from `C:\Interest Calc\compound_calculator_v5.py`). |
 | `serve.py` | Optional stdlib HTTP server; opens the browser. |
 | `start_dashboard.bat` | Windows launcher for `serve.py`. |
 | `README.md` | User-facing docs. |
@@ -167,6 +168,34 @@ All figures are in today's dollars. Balances grow at
   `(2)`; Reset keeps saved plans.
 - **Theme:** light/dark; print styles; responsive.
 
+## Compound calculator (`compound.html`)
+
+A second page, reached from the tab strip under the app bar; the retirement page
+links back the same way. It is a JS port of `compound_calculator_v5.py` (Tkinter
++ matplotlib) and has its own three tabs:
+
+- **Accumulation:** principal, nominal return, years, inflation, annual
+  contribution → nominal value, today's dollars, interest earned, total
+  contributed, buying-power lost, real return; growth chart and a year-by-year
+  table.
+- **Withdrawals:** starting balance, return, inflation, years, annual
+  withdrawal, optional contribution, withdrawal growth above inflation →
+  real/nominal balance chart, depletion year, total withdrawn.
+- **Safe rate:** balance, return, inflation, years, target ending balance →
+  exact sustainable rate, per year/month, a 2.0–7.0% comparison table
+  (green = lasts, red = runs out), trajectory chart, and a "$X/month" checker.
+
+Math is a 1:1 port (`future_value`, `real_value`, `real_return`,
+`simulate_withdrawals`, `safe_withdrawal_rate`, `simulate_at_rate`), so results
+match the Python app: 10,000 at 7% for 20 years = 38,696.84 nominal /
+21,425.50 real; 500,000 drawing 30,000 real at 7%/3% depletes in year 28
+(820,600.64 withdrawn); the exact rate for 500,000 over 30 years is 5.7015% =
+28,507.42/yr.
+
+Persistence is its own `localStorage` key `compound-calculator-v1` (tab, theme
+and all inputs). On a first visit it borrows the retirement page's theme so the
+two pages match; the theme toggle then updates only the compound page.
+
 ## Persistence
 
 - Primary: URL fragment `#s=<base64 UTF-8 JSON>` containing current values,
@@ -200,6 +229,10 @@ All figures are in today's dollars. Balances grow at
     `fehb` premium from the pension start year instead of ACA, with Medicare
     added at 62/65. Deferred plans still use ACA. ACA/FEHB rows dim to show
     which one is in force.
+11. Added the second app: a tab strip under the app bar switches between the
+    retirement dashboard and a JS port of the compounding/withdrawal/SWR
+    calculator. Separate pages (`index.html`, `compound.html`) sharing design
+    tokens and theme; the Python original is untouched.
 
 ## Known assumptions / open items
 

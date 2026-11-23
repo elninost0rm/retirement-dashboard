@@ -12,6 +12,21 @@ phase-in, and a new-job gap/severance.
 Published from the [retirement-dashboard](https://github.com/elninost0rm/retirement-dashboard)
 repository with GitHub Pages. Every push to `main` redeploys it within a minute.
 
+## Two calculators
+
+The site has two apps, switched with the tab strip under the header:
+
+- **Retirement plan** (`index.html`) — the federal pension / TSP / Social Security
+  projection described below.
+- **Compounding & withdrawals** (`compound.html`) — a standalone compounding
+  calculator ported from `compound_calculator_v5.py`, with three tabs of its own:
+  Accumulation (lump sum plus contributions, nominal and real), Withdrawals
+  (draw-down with depletion detection) and Safe rate (maximum sustainable
+  withdrawal rate, plus a "$X a month — is that safe?" check).
+
+Both share the same design tokens and light/dark theme, and each remembers its
+own inputs in the browser.
+
 ## Run it
 
 **Option A — just open it**
@@ -111,6 +126,7 @@ The new pension paths were checked against hand calculations:
 | File | Purpose |
 | --- | --- |
 | `index.html` | The whole dashboard (HTML + CSS + JS, no dependencies). |
+| `compound.html` | Compounding / withdrawal / safe-rate calculator, same design, own tabs. |
 | `serve.py` | Optional local server that opens the dashboard in your browser. |
 | `start_dashboard.bat` | Windows launcher for `serve.py`. |
 | `retirement_gui.py` | Original Tkinter desktop app, unchanged. |
