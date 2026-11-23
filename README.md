@@ -51,6 +51,10 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   it, Shift+scroll for 10×.
 - **Layoff bridge** — a new-job gap in months, monthly severance for 1–12 months,
   and a toggle for whether the new job offers health insurance.
+- **Retiree health** — a "Keep FEHB in retirement" toggle plus a household FEHB
+  premium. With an immediate annuity the FEHB cost applies from retirement and
+  the ACA premium is dimmed and ignored; a deferred annuity can't keep FEHB, so
+  ACA applies and the hint line says why.
 - **Mortgage payoff** — payoff year and month, with the spending reduction
   prorated across the payoff year.
 - **Portfolio chart** — stacked brokerage/TSP areas, a total line, milestone
@@ -130,9 +134,14 @@ The new pension paths were checked against hand calculations:
     nominal amount eroded from the leave year to that age.
 - The spouse is modeled as 3 years older; spouse Social Security starts at your
   age 59, yours at 62.
-- **Health costs:** zero while anyone is working. ACA is a household amount,
-  halved when only one of you is on it. Medicare is a household amount: half for
-  one person from your age 62 (when your spouse turns 65), full from your 65.
+- **Health costs:** zero while anyone is working. Retiring on an **immediate**
+  annuity (VERA, MRA+30, or normal) keeps **FEHB**: the household FEHB premium is
+  paid from the retirement year for life, with Medicare added as each of you turns
+  65. On a **deferred** annuity FEHB is not available, and with the toggle off you
+  use **ACA** instead. ACA is a household amount, halved when only one of you is
+  on it; Medicare is a household amount, half for one person from your age 62
+  (when your spouse turns 65), full from your 65. When FEHB continues, enter only
+  Medicare Part B in the Medicare field.
 - Withdrawals come from brokerage first, then TSP once you reach 59½.
 - The mortgage payoff year and month are inputs. The month is the last month
   with a payment, so June means six months of mortgage spending and six months of

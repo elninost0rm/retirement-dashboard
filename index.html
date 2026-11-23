@@ -351,6 +351,7 @@
   .val-wrap.is-blank{min-width:126px}
   .val-wrap.is-blank input{font-weight:500}
   .val-wrap.is-blank input::placeholder{color:var(--muted);opacity:.7;font-weight:500}
+  .slider-row.is-unused{opacity:.45}
   .val-wrap .prefix,.val-wrap .suffix{color:var(--muted);font-size:10.5px;flex:none}
   .val-wrap input{
     width:100%;min-width:0;border:0;background:transparent;outline:none;
@@ -888,6 +889,11 @@
           Spending &amp; health
         </h2>
         <div class="fields" id="group-spending"></div>
+        <label class="switch positive" style="margin-top:11px" title="An immediate annuity (VERA, MRA+30, or normal) keeps FEHB into retirement. Deferred annuities do not qualify, so ACA applies instead.">
+          <input type="checkbox" id="fehbRetire">
+          <span>Keep FEHB in retirement</span>
+        </label>
+        <div class="hint-line" id="fehbHint">—</div>
       </section>
 
       <section class="group">
@@ -1045,8 +1051,11 @@
             <b>deferred</b> to the normal pension age and eroded from your leave age. The multiplier is 1.0%
             per service year, 1.1% at 20+ years. The spouse is modeled as 3 years older; spouse Social
             Security starts at your age 59 and yours at 62. Health costs are zero while anyone is working.
-            ACA is a household amount (halved when only one of you is on it); Medicare is a household amount,
-            half for one person from your age 62 (when your spouse turns 65) and full from your 65.
+            Retiring on an <b>immediate</b> annuity (VERA, MRA+30, normal) keeps <b>FEHB</b>: the FEHB
+            premium applies from then on, with Medicare added as each of you turns 65. Without FEHB (or on a
+            <b>deferred</b> annuity) the <b>ACA</b> premium applies instead, halved when only one of you is on
+            it. Medicare is a household amount, half for one person from your age 62 (when your spouse turns 65)
+            and full from your 65.
             Withdrawals come from brokerage first, then TSP once penalty-free access begins at 59½. The
             mortgage payoff year and month are inputs, and the projection runs through age 95.
           </div>
@@ -1111,6 +1120,8 @@ function calculateScenario(inputs) {
   const severanceMonthly = Number(inputs.severance_monthly) || 0;
   const severanceMonths = Math.max(0, Math.trunc(Number(inputs.severance_months) || 0));
   const newJobHealth = !!inputs.new_job_health;
+  const fehbEnabled = !!inputs.fehb_enabled;
+  const fehb = Number(inputs.fehb) || 0;
   const nominalReturn = Number(inputs.nominal_return) / 100;
   const inflation = Number(inputs.inflation) / 100;
   const currentAge = Math.trunc(Number(inputs.current_age));
@@ -1153,6 +1164,11 @@ function calculateScenario(inputs) {
     pensionMode = "deferred";
     pensionStart = normalPensionAge;
   }
+
+  // FEHB continues only with an immediate annuity (VERA / MRA+30 / normal).
+  // A deferred annuity has no FEHB, so those plans fall back to ACA.
+  const fehbEligible = pensionMode !== "deferred";
+  const retireeFehb = fehbEnabled && fehbEligible;
 
   const normalRealReturn = (1 + nominalReturn) / (1 + inflation) - 1;
   const nominalPension = high3 * serviceAtLayoff * (serviceAtLayoff < 20 ? 0.01 : 0.011);
@@ -1200,7 +1216,12 @@ function calculateScenario(inputs) {
     const youMedicare = age >= 65;
     const spouseMedicare = spouseCurrentAge >= 65;
     let healthCost = 0;
-    if (!someoneWorking) {
+    // An immediate annuity carries FEHB from the retirement year, even if the
+    // spouse is still working (suspend it manually only if their plan covers you).
+    if (retireeFehb && age >= pensionStart) {
+      const onMedicare = (youMedicare ? 1 : 0) + (spouseMedicare ? 1 : 0);
+      healthCost = fehb + medicare * (onMedicare / 2);
+    } else if (!someoneWorking) {
       if (!youMedicare && !spouseMedicare) healthCost = aca;
       else if (!youMedicare && spouseMedicare) healthCost = aca / 2 + medicare / 2;
       else if (youMedicare && !spouseMedicare) healthCost = aca / 2 + medicare / 2;
@@ -1318,7 +1339,8 @@ function calculateScenario(inputs) {
     if (spouseCurrentAge === 65) events.push("Spouse Medicare begins");
     if (age === tspAccessAge) events.push("TSP penalty-free access");
     if (year === payOffYear) events.push(`Mortgage paid off (${monthName(payOffMonth)})`);
-    if (!someoneWorking && prevSomeoneWorking && age < 65) events.push("ACA coverage begins");
+    if (retireeFehb && age === pensionStart) events.push("FEHB coverage begins");
+    else if (!retireeFehb && !someoneWorking && prevSomeoneWorking && age < 65) events.push("ACA coverage begins");
     if (stressEnabled && stressStartAge <= age && age <= stressEndAge) {
       events.push(`STRESS: ${(stressRealReturn * 100).toFixed(0)}% real return`);
     }
@@ -1359,7 +1381,10 @@ function calculateScenario(inputs) {
 
   const extraInfo = {
     min_brokerage_pre59: minBrokeragePre59 === Infinity ? 0 : minBrokeragePre59,
-    brokerage_failed_pre59: brokerageFailedPre59
+    brokerage_failed_pre59: brokerageFailedPre59,
+    pension_mode: pensionMode,
+    fehb_eligible: fehbEligible,
+    fehb_active: retireeFehb
   };
 
   return {
@@ -1444,13 +1469,14 @@ const DEFAULTS = {
   brokerage: 0, tsp: 0,
   brokerage_contrib: 30000, tsp_contrib: 14000,
   new_job: 32000, spouse: 31200,
-  base_spend: 56400, aca: 3792, medicare: 10000, mortgage_save: 9096,
+  base_spend: 56400, aca: 3792, fehb: 6000, medicare: 10000, mortgage_save: 9096,
   ss_you: 18397, ss_spouse: 13074, high3: 110000,
   current_age: 38, layoff_age: 43, your_retire_age: 53, spouse_retire_age: 56,
   nominal_return: 7, inflation: 3,
   stress_enabled: false, stress_real_return: 0, stress_start_age: 53, stress_end_age: 58,
   payoff_year: 2049, payoff_month: 6,
   new_job_gap_months: 0, severance_monthly: 0, severance_months: 1, new_job_health: true,
+  fehb_enabled: true,
   service_start_year: 2011,
   vera_year: 2036, vera_age: 49, vera_service: 25,
   mra_age: 57, mra_service: 30, normal_pension_age: 62
@@ -1475,8 +1501,9 @@ const MONEY_GROUPS = [
   ]},
   { mount: "group-spending", fields: [
     ["base_spend", "Base spending / yr", "$", "Annual core spending, including the mortgage until it is paid off."],
-    ["aca", "ACA premium / yr", "$", "Household total for both; halved when only one of you is on ACA."],
-    ["medicare", "Medicare (household)", "$", "Household total; modeled as half for one person from your age 62, full from 65."],
+    ["aca", "ACA premium / yr", "$", "Household total for both; halved when only one of you is on ACA. Ignored when FEHB continues."],
+    ["fehb", "FEHB premium / yr", "$", "Your employee share of FEHB, paid from the year you stop working. Applies with an immediate annuity."],
+    ["medicare", "Medicare (household)", "$", "Household total; modeled as half for one person from your age 62, full from 65. With FEHB kept, enter only Part B — the FEHB plan covers the rest."],
     ["mortgage_save", "Mortgage saving / yr", "$", "Spending that disappears once the mortgage is paid off."],
     ["payoff_year", "Payoff year", "year", "Calendar year the mortgage is paid off."],
     ["payoff_month", "Payoff month", "mo", "Last month with a mortgage payment (1–12)."]
@@ -1833,6 +1860,12 @@ function buildControls() {
     scheduleRender();
   });
 
+  $("fehbRetire").addEventListener("change", e => {
+    state.values.fehb_enabled = e.target.checked;
+    saveState(true);
+    scheduleRender();
+  });
+
   $("resetBtn").addEventListener("click", resetDefaults);
   $("railReset").addEventListener("click", resetDefaults);
   $("pinBtn").addEventListener("click", pinCurrent);
@@ -1961,6 +1994,7 @@ function syncAllControls() {
   $("stressToggle").checked = !!state.values.stress_enabled;
   $("stressBody").hidden = !state.values.stress_enabled;
   $("newJobHealth").checked = !!state.values.new_job_health;
+  $("fehbRetire").checked = !!state.values.fehb_enabled;
 }
 
 function normalizeAges(dragged) {
@@ -2037,6 +2071,31 @@ function scheduleRender() {
   requestAnimationFrame(() => { rafPending = false; render(); });
 }
 
+/* Reframes the health-cost rows around whichever coverage actually applies, so
+   a VERA/MRA/normal retirement is not silently priced as an ACA plan. */
+function updateCoverageNote(result) {
+  const hint = $("fehbHint");
+  const acaRow = document.getElementById("m_aca")?.closest(".slider-row");
+  const fehbRow = document.getElementById("m_fehb")?.closest(".slider-row");
+  const active = !!(result && result.extra && result.extra.fehb_active);
+  const eligible = !!(result && result.extra && result.extra.fehb_eligible);
+  const wanted = !!state.values.fehb_enabled;
+
+  if (acaRow) acaRow.classList.toggle("is-unused", active);
+  if (fehbRow) fehbRow.classList.toggle("is-unused", !active);
+
+  if (!hint) return;
+  if (active) {
+    hint.textContent = "FEHB continues into retirement — ACA premium is ignored; Medicare adds from 65.";
+  } else if (wanted && !eligible) {
+    hint.textContent = "Deferred pension has no FEHB — ACA premium applies until Medicare.";
+  } else if (eligible) {
+    hint.textContent = "FEHB available with this pension but turned off — ACA premium applies.";
+  } else {
+    hint.textContent = "No retiree coverage — ACA premium applies until Medicare.";
+  }
+}
+
 function render() {
   const errors = validate();
   if (errors.length) {
@@ -2046,6 +2105,7 @@ function render() {
 
   const result = calculateScenario(state.values);
   lastResult = result;
+  updateCoverageNote(result);
 
   lastPinned = state.pinned.map(p => {
     try { return Object.assign({}, p, { result: calculateScenario(p.values) }); }

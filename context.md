@@ -56,15 +56,16 @@ No build step or dependencies. The original Tkinter app is untouched.
   Their sliders run 0–$1,000,000 and 0–$800,000 with $10k ticks.
 - Contributions: brokerage $30,000/yr; TSP $14,000/yr.
 - Income: new job $32,000/yr; spouse $31,200/yr; high-3 $110,000.
-- Spending: base $56,400; ACA $3,792 (household); Medicare $10,000
-  (household); mortgage saving $9,096.
+- Spending: base $56,400; ACA $3,792 (household); FEHB $6,000 (household,
+  employee share); Medicare $10,000 (household); mortgage saving $9,096.
 - Social Security: you $18,397; spouse $13,074 (both claim at 62).
 - Ages: current 38, layoff 43, you retire 53, spouse retires 56 (her age).
 - Returns: nominal 7.0%, inflation 3.0% → real 3.8835%.
 - Mortgage payoff: June 2049.
 - Pension rules: service start 2011; VERA 2036 / age 49 / 25 years;
   MRA+30 age 57 / 30 years; normal pension age 62.
-- New-job gap 0 months; severance $0/mo for 1 month; new-job health coverage on.
+- New-job gap 0 months; severance $0/mo for 1 month; new-job health coverage on;
+  FEHB kept in retirement on.
 - Stress test off; projection through age 95.
 
 Results with the balances filled in as $350,000 / $280,000: **minimum portfolio
@@ -101,12 +102,22 @@ All figures are in today's dollars. Balances grow at
 
 - $0 while anyone is working (federal job, spouse job, or new job when the
   coverage toggle is on and the job is active).
-- ACA is a household amount; halved when only one person is on ACA.
+- **FEHB** (`fehb_enabled`, default on): only with an **immediate annuity** —
+  VERA, MRA+30, or normal. The household `fehb` premium is paid from the pension
+  start year for life, even while a spouse still works, and Medicare is added on
+  top as each of you turns 65. A deferred annuity cannot keep FEHB, so those
+  plans fall back to ACA regardless of the toggle. “FEHB coverage begins” is an
+  event on the pension start year.
+- **ACA** is a household amount; halved when only one person is on ACA. It is
+  ignored whenever FEHB applies.
 - Medicare is a household amount; half from your age 62 (spouse turns 65), full
-  from your age 65. A “Spouse Medicare begins” event fires at 62.
+  from your age 65. A “Spouse Medicare begins” event fires at 62. When FEHB
+  continues, set `medicare` to Part B only — the FEHB plan acts as the supplement.
 - The new-job coverage toggle (`new_job_health`, default on) assumes **family
   coverage** while the new job is active (after the gap, until your retirement
   age). The gap year itself still pays ACA.
+- The sidebar dims whichever of ACA/FEHB does not apply and explains why in a
+  hint line under the spending group.
 
 ### Job, gap, severance, spending
 
@@ -185,6 +196,10 @@ All figures are in today's dollars. Balances grow at
 9. Brokerage and TSP starting balances ship **blank** with an `Enter amount`
    placeholder so the public page shows no personal figures; blank is stored as
    0 and both sliders keep a wide 0–$1M / 0–$800k range.
+10. Added FEHB: an immediate annuity (VERA/MRA+30/normal) pays the household
+    `fehb` premium from the pension start year instead of ACA, with Medicare
+    added at 62/65. Deferred plans still use ACA. ACA/FEHB rows dim to show
+    which one is in force.
 
 ## Known assumptions / open items
 
