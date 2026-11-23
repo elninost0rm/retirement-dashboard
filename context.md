@@ -60,7 +60,9 @@ No build step or dependencies. The original Tkinter app is untouched.
 - Spending: base $56,400; ACA $3,792 (household); FEHB $6,000 (household,
   employee share); Medicare $10,000 (household); mortgage saving $9,096.
 - Social Security: you $18,397; spouse $13,074 (both claim at 62).
-- Ages: current 38, layoff 43, you retire 53, spouse retires 56 (her age).
+- Ages: current age is **derived from `birthdate`** (default `1987-08-14`)
+  against the computer clock — 39 on 2026-11-23, shown to the day; layoff 43,
+  you retire 53, spouse retires 56 (her age).
 - Returns: nominal 7.0%, inflation 3.0% → real 3.8835%.
 - Mortgage payoff: June 2049.
 - Pension rules: service start 2011; VERA 2036 / age 49 / 25 years;
@@ -69,12 +71,13 @@ No build step or dependencies. The original Tkinter app is untouched.
   FEHB kept in retirement on.
 - Stress test off; projection through age 95.
 
-Results with the balances filled in as $350,000 / $280,000: **minimum portfolio
-$700,175 at age 38**; **age-95 balance $4,981,983**. The original Python/Tkinter
-app produced $5,014,739 at 95 because the dashboard now phases in Medicare at
-your age 62 (spouse turns 65) and halves the household ACA cost for the person
-still on it. With the balances blank the plan starts from $0, so the headline
-shows a low minimum and an early shortfall — expected, not a bug.
+Results with the balances filled in as $350,000 / $280,000 and the default birth
+date (age 39 on 2026-11-23): **minimum portfolio $700,175**; **age-95 balance
+$4,198,936**. The original Python/Tkinter app produced $5,014,739 at 95 because
+the dashboard now phases in Medicare at your age 62 (spouse turns 65) and halves
+the household ACA cost for the person still on it. With the balances blank the
+plan starts from $0, so the headline shows a low minimum and an early shortfall —
+expected, not a bug.
 
 ## Engine rules (`calculateScenario` in `index.html`)
 
@@ -152,6 +155,8 @@ All figures are in today's dollars. Balances grow at
 - **Input rail:** static (no internal scroll/sticky), scrolls with the page.
   Every dollar, year, month, age, and service field is a slider with an editable
   value chip. Hover a slider or chip and scroll to nudge; Shift+scroll = 10×.
+  The one exception is **current age**: it comes from the `birthdate` date field
+  (no slider) and displays as years/months/days plus the next birthday.
 - **Tick sizes:** $10k for six-digit defaults, $1k for five-digit, $250 for
   ACA/mortgage/severance, 1 for years/months/ages/services, 0.5% for nominal
   return and inflation. Dollar slider max = 3× default (severance 0–$25k);
@@ -198,8 +203,9 @@ two pages match; the theme toggle then updates only the compound page.
 
 ## Persistence
 
-- Primary: URL fragment `#s=<base64 UTF-8 JSON>` containing current values,
-  pinned scenarios, saved scenarios (`sv`), tab, filter, and theme.
+- Primary: URL fragment `#s=<base64 UTF-8 JSON>` containing current values
+  (including `birthdate`), pinned scenarios, saved scenarios (`sv`), tab, filter,
+  and theme.
 - Mirror: `localStorage` key `retirement-dashboard-v2` when available.
 - Saved scenarios store only non-default values (`compactValues`) to keep the
   hash shorter; up to 12.
@@ -236,9 +242,15 @@ two pages match; the theme toggle then updates only the compound page.
 12. Deleted the old PyInstaller output (`build/`, `dist/`, ~22 MB) plus
     `retirement_gui.spec` and `build_exe.bat`. `retirement_gui.py` is kept as the
     reference implementation; it still runs from source.
+13. Current age now comes from a **birth date** field (default 1987-08-14) read
+    against the computer clock; the age slider was removed. The engine still uses
+    whole years, and `current_age` is derived, never edited directly.
 
 ## Known assumptions / open items
 
+- Ages are whole years inside the engine. The exact age (years, months, days) is
+  display-only, and the first projection year is treated as a full year from
+  today — no partial-year proration of contributions, spending, or returns.
 - New-job health coverage is assumed to cover **both** of you (family coverage).
   If it is employee-only, or Medicare costs should continue while employer
   coverage is active, this needs refinement.
@@ -249,12 +261,13 @@ two pages match; the theme toggle then updates only the compound page.
 - SS claim ages are fixed at 62; no early/late benefit adjustment.
 - Horizon is your age 95; no separate spouse horizon.
 - TSP access is annual (effective age 60); the 59.5 event is a UI milestone.
-- Default current age is 38 (the original sample); the user’s actual age is 39.
-  Set it to 39 for the 2036/age-49 VERA timeline.
+- Age is derived from `birthdate`; change the birth date rather than looking for
+  an age control.
 
 ## Verification notes
 
-- Default: min **$700,175** at 38, real **3.8835%**, end at 95 **$4,981,983**.
+- Balances 350k/280k, age 39 (default birth date): min **$700,175**, real
+  **3.8835%**, end at 95 **$4,198,936**.
 - VERA 49/25: **$30,250** nominal → **$20,599** by 62.
 - MRA+30 57/33: **$39,930**, COLA from 57.
 - Deferred 43/19: **$11,919** at 62.
