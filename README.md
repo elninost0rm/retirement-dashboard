@@ -90,7 +90,8 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   on the chart and side by side in the compare table.
 - **Saved scenarios** — save the current plan under a name, load it later, or
   delete it. Up to 12 plans are kept with the dashboard state.
-- **Table filters** — all years, milestones only, or shortfalls only.
+- **Table filters** — all years, milestones only, or shortfalls only (unfunded
+  years count as shortfalls).
 - **Dark mode**, copyable text summary, CSV export, and print-friendly styles.
 
 ## Saving and sharing
@@ -124,6 +125,18 @@ The new pension paths were checked against hand calculations:
 - **VERA at 49** with 25 years: $30,250 nominal, eroding to $20,599 by 62.
 - **MRA+30 at 57** with 33 years: $39,930, COLA from 57.
 - **Deferred at 43** with 19 years: $11,919 at 62.
+
+The engine was then audited outside the browser and compared year by year against
+two independent implementations. All 57 projection years matched the original
+Python model to the dollar once the rules were aligned, and all 57 matched a
+second implementation written from the documented rules across the default, VERA,
+MRA+30, gap/severance, blank-balance, stress, negative-return and overspend
+scenarios.
+
+Balances never go negative. If a year's spending exceeds what the balances can
+cover, they stop at $0 and the remainder is reported as **unfunded** — in the
+hero, a banner, the year's note, and the shortfalls filter — rather than being
+silently absorbed.
 
 ## Files
 

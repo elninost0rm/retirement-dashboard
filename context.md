@@ -141,7 +141,12 @@ All figures are in today's dollars. Balances grow at
 - Withdrawals draw brokerage first, then TSP once age ≥ 59.5. Because the loop is
   annual, access effectively starts at age 60; the UI adds a synthetic “TSP
   access (59½)” milestone at 60.
+- Balances never go negative. A deficit larger than the balances takes what is
+  there and records the rest as **unfunded** (`extra.unfunded_total`, plus a
+  per-row `unfunded`); it never borrows or compounds a negative balance.
 - Pre-59½ shortfall sets the brokerage-failed warning.
+- Displayed columns always add up: `total` is the rounded sum of the unrounded
+  balances, and the TSP column absorbs the ±$1 rounding difference.
 - Your SS starts at 62; spouse SS starts at your age 59 (spouse 62). Claim ages
   are fixed; no early/late adjustment.
 - Projection ends at your age 95 (spouse is 98 at the end).
@@ -150,8 +155,9 @@ All figures are in today's dollars. Balances grow at
 
 - **Header:** Save (name dialog), Saved (count + popover library), Pin (compare,
   up to 4), Reset, theme toggle.
-- **Hero:** minimum portfolio, portfolio at 95, funded-through age, real return,
-  brokerage low before 59½, sparkline.
+- **Hero:** minimum portfolio, portfolio at 95, funded-through age (a year with
+  unfunded spending ends the run), real return, brokerage low before 59½,
+  sparkline.
 - **Input rail:** static (no internal scroll/sticky), scrolls with the page.
   Every dollar, year, month, age, and service field is a slider with an editable
   value chip. Hover a slider or chip and scroll to nudge; Shift+scroll = 10×.
@@ -245,6 +251,12 @@ two pages match; the theme toggle then updates only the compound page.
 13. Current age now comes from a **birth date** field (default 1987-08-14) read
     against the computer clock; the age slider was removed. The engine still uses
     whole years, and `current_age` is derived, never edited directly.
+14. Audited the engine headless against the Python original and an independent
+    ledger (57/57 years each, 8 scenarios). Fixed three defects found in that
+    audit: a negative balance compounded like an asset and its debt was erased at
+    retirement; table columns could miss the total by $1; and unfunded spending
+    after 59½ was dropped without a record. Spare "unfunded" is now surfaced in
+    the hero, a banner, the row note and the shortfalls filter.
 
 ## Known assumptions / open items
 
@@ -271,6 +283,13 @@ two pages match; the theme toggle then updates only the compound page.
 - VERA 49/25: **$30,250** nominal → **$20,599** by 62.
 - MRA+30 57/33: **$39,930**, COLA from 57.
 - Deferred 43/19: **$11,919** at 62.
+- Engine audit (run headless from `index.html`): 57/57 years identical to
+  `retirement_gui.py` with rules aligned (no FEHB, no new-job coverage,
+  `aca == medicare`), and 57/57 identical to a ledger rewritten from these rules
+  in 8 scenarios (default, VERA, MRA+30, gap+severance, blank+gap, stress,
+  negative real return, overspend).
+- Overspend probe (age 50, $1k balances, $150k spend): balances clamp at $0 and
+  $5,252,063 is reported unfunded; no negative balances anywhere.
 - Severance $5,016/mo × 12 with $60,192 spend: note shows
   `Spend $60,192 · Gtd Inc $0 · Severance $60,192 · Net need $0`; cash-flow
   portfolio draw $0.

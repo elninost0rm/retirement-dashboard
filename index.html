@@ -1233,10 +1233,12 @@ function calculateScenario(inputs) {
   let minTotalAge = 0;
   let minBrokeragePre59 = Infinity;
   let brokerageFailedPre59 = false;
+  let unfundedTotal = 0;
 
   for (let age = currentAge; age <= endAge; age++) {
     const year = currentYear + (age - currentAge);
     const spouseCurrentAge = age + 3;
+    let unfundedThisYear = 0;
 
     // ----- Spending & health -----
     let currentBase;
@@ -1296,7 +1298,26 @@ function calculateScenario(inputs) {
       brokerage += brokerContrib;
       tsp += tspContrib;
     } else if (!bothRetired) {
-      brokerage += earnedIncome + guaranteedIncome - totalSpend;
+      // A working-year deficit draws from the balances instead of letting the
+      // brokerage go negative, which would otherwise compound like an asset.
+      const net = earnedIncome + guaranteedIncome - totalSpend;
+      if (net >= 0) {
+        brokerage += net;
+      } else {
+        let need = -net;
+        const fromBrokerage = Math.min(need, Math.max(0, brokerage));
+        brokerage -= fromBrokerage;
+        need -= fromBrokerage;
+        if (need > 0 && age >= tspAccessAge) {
+          const fromTsp = Math.min(need, Math.max(0, tsp));
+          tsp -= fromTsp;
+          need -= fromTsp;
+        }
+        if (need > 0) {
+          unfundedThisYear += need;
+          if (age < tspAccessAge) brokerageFailedPre59 = true;
+        }
+      }
     }
 
     // ----- Withdrawals / surplus reinvestment -----
@@ -1308,15 +1329,18 @@ function calculateScenario(inputs) {
         brokerage += netCashflow;
       } else if (netCashflow < 0) {
         let need = -netCashflow;
-        const fromBrokerage = Math.min(need, brokerage);
+        const fromBrokerage = Math.min(need, Math.max(0, brokerage));
         brokerage -= fromBrokerage;
         need -= fromBrokerage;
         if (need > 0 && age >= tspAccessAge) {
-          const fromTsp = Math.min(need, tsp);
+          const fromTsp = Math.min(need, Math.max(0, tsp));
           tsp -= fromTsp;
           need -= fromTsp;
         }
-        if (need > 0 && age < tspAccessAge) brokerageFailedPre59 = true;
+        if (need > 0) {
+          unfundedThisYear += need;
+          if (age < tspAccessAge) brokerageFailedPre59 = true;
+        }
       }
 
       const sevPart = severanceThisYear > 0 ? `, Severance: ${money(severanceThisYear)}` : "";
@@ -1345,6 +1369,9 @@ function calculateScenario(inputs) {
         const label = who === "pension" ? "Pension" : (who === "severance" ? "Severance" : `Working (${who})`);
         baseNote = `${label} – ${flow}${sevPart}`;
       }
+    }
+    if (unfundedThisYear > 0) {
+      baseNote += ` · ${money(unfundedThisYear)} unfunded`;
     }
 
     // Track minimum brokerage before TSP access
@@ -1392,17 +1419,21 @@ function calculateScenario(inputs) {
     brokerage *= (1 + thisYearReturn);
     tsp *= (1 + thisYearReturn);
 
+    // The total is rounded from the unrounded sum and stays authoritative; the
+    // TSP column absorbs the ±$1 so the two columns always add up to it.
+    const brokerageShown = pyRound(brokerage);
     const total = pyRound(brokerage + tsp);
     if (total < minTotalPortfolio) {
       minTotalPortfolio = total;
       minTotalAge = age;
     }
+    unfundedTotal += unfundedThisYear;
 
     rows.push({
       age: age,
       year: year,
-      brokerage: pyRound(brokerage),
-      tsp: pyRound(tsp),
+      brokerage: brokerageShown,
+      tsp: total - brokerageShown,
       total: total,
       note: baseNote,
       events: events,
@@ -1414,13 +1445,15 @@ function calculateScenario(inputs) {
       guaranteed: guaranteedIncome,
       spend: totalSpend,
       health: healthCost,
-      severance: severanceThisYear
+      severance: severanceThisYear,
+      unfunded: unfundedThisYear
     });
   }
 
   const extraInfo = {
     min_brokerage_pre59: minBrokeragePre59 === Infinity ? 0 : minBrokeragePre59,
     brokerage_failed_pre59: brokerageFailedPre59,
+    unfunded_total: unfundedTotal,
     pension_mode: pensionMode,
     fehb_eligible: fehbEligible,
     fehb_active: retireeFehb
@@ -2253,7 +2286,9 @@ function render() {
    hero
    ====================================================================== */
 function fundedThrough(rows) {
-  for (const r of rows) if (r.total <= 0) return r.age;
+  // "Funded" means everything was paid for, so a year with unfunded spending
+  // counts as the end of funding even if a balance is still sitting there.
+  for (const r of rows) if (r.total <= 0 || r.unfunded > 0) return r.age;
   return null;
 }
 
@@ -2269,8 +2304,13 @@ function renderHero(r) {
   $("heroEnd").textContent = money(end.total);
   $("heroEndSub").textContent = `${compact(end.brokerage)} brokerage · ${compact(end.tsp)} TSP`;
 
+  const unfunded = Number(r.extra.unfunded_total) || 0;
+  const depRow = depletedAt === null ? null : rows.find(x => x.age === depletedAt);
+  const portfolioEmpty = !!(depRow && depRow.total <= 0);
   $("heroFunded").textContent = depletedAt === null ? "95+" : `Age ${depletedAt}`;
-  $("heroFundedSub").textContent = depletedAt === null ? "no shortfall through 95" : "portfolio runs out";
+  $("heroFundedSub").textContent = unfunded > 0
+    ? `${portfolioEmpty ? "portfolio runs out · " : ""}${money(unfunded)} unfunded`
+    : (depletedAt === null ? "no shortfall through 95" : "portfolio runs out");
 
   $("heroReal").textContent = pct(r.realReturn);
   $("heroRealSub").textContent =
@@ -2375,6 +2415,15 @@ function renderBanners(result, errors) {
           <span class="ico">${ICONS.alert}</span>
           <div><b>Brokerage depleted before TSP access (59½)</b> — this scenario needs a bridge
           account, or earlier penalty-free access, to avoid a shortfall.</div>
+        </div>`);
+    }
+    const unfunded = Number(result.extra.unfunded_total) || 0;
+    if (unfunded > 0) {
+      parts.push(`
+        <div class="banner warn">
+          <span class="ico">${ICONS.alert}</span>
+          <div><b>${money(unfunded)} of spending is unfunded</b> — balances stop at zero and the
+          remaining deficit each year is left unspent rather than borrowed.</div>
         </div>`);
     }
   }
@@ -3062,7 +3111,7 @@ function renderTable(r) {
   if (state.filter === "milestones") {
     rows = all.filter(d => d.events.some(e => !e.startsWith("STRESS")) || d.age === 60);
   }
-  if (state.filter === "shortfalls") rows = all.filter(d => d.total <= 0);
+  if (state.filter === "shortfalls") rows = all.filter(d => d.total <= 0 || d.unfunded > 0);
 
   $("tableSub").textContent = state.filter === "all"
     ? `${all.length} projection years · low point at age ${r.summary.minAge}`
