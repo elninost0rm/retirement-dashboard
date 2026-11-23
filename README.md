@@ -1,0 +1,143 @@
+# Retirement Flexibility Calculator — Web Dashboard
+
+A browser dashboard built from `retirement_gui.py`. The core balance engine is a
+faithful port, and the assumptions that used to be hard-coded are now editable:
+pension eligibility paths, service start, mortgage payoff date, the Medicare
+phase-in, and a new-job gap/severance.
+
+## Live version
+
+<https://elninost0rm.github.io/retirement-dashboard/>
+
+Published from the [retirement-dashboard](https://github.com/elninost0rm/retirement-dashboard)
+repository with GitHub Pages. Every push to `main` redeploys it within a minute.
+
+## Run it
+
+**Option A — just open it**
+
+Double-click `index.html`. Everything runs locally in the page; no installs.
+
+**Option B — local server (recommended)**
+
+Double-click `start_dashboard.bat`, or run:
+
+```
+python serve.py
+```
+
+It serves the dashboard at <http://127.0.0.1:8420/> and opens your browser.
+Press `Ctrl+C` in the terminal to stop it. Standard library only.
+
+Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
+
+## What's in the dashboard
+
+- **Hero summary** — minimum portfolio, balance at 95, funded-through age,
+  real return, and the brokerage low point before 59½, with a portfolio sparkline.
+- **Live inputs** — every field and slider recalculates immediately. Ages stay
+  in a valid order while you drag, and invalid numbers are flagged inline.
+- **Pension eligibility** — service start year (years are calculated
+  automatically), VERA year/age/service, MRA+30 age/service, and the normal
+  pension age.
+- **Sliders everywhere** — every dollar, year, age, service, and month field is
+  a slider with an editable value chip. Dollar ticks are $10k for six-digit
+  defaults, $1k for five-digit defaults, and $250 for the four-digit fields
+  (ACA, mortgage saving, severance). Nominal return and inflation use 0.5%
+  ticks. Slider maximums are 3× the default; hover a slider and scroll to nudge
+  it, Shift+scroll for 10×.
+- **Layoff bridge** — a new-job gap in months, monthly severance for 1–12 months,
+  and a toggle for whether the new job offers health insurance.
+- **Mortgage payoff** — payoff year and month, with the spending reduction
+  prorated across the payoff year.
+- **Portfolio chart** — stacked brokerage/TSP areas, a total line, milestone
+  markers, the stress window, and hover details. With the stress test on, the
+  no-stress path is overlaid as a dashed comparison line.
+- **Cash-flow chart** — guaranteed income (pension + Social Security) against
+  spending from retirement onward, with the portfolio draw shaded.
+- **Key moments** — every milestone (layoff, pension start, retirement, SS, TSP
+  access, Medicare, mortgage payoff) with the portfolio value at that age. Click
+  one to jump to the year in the table.
+- **What moves the needle** — the impact on the age-95 balance of spending
+  $5k more, a 1% lower return, retiring two years later, delaying the layoff a
+  year, or adding/removing the stress test.
+- **Scenario compare** — pin up to four scenarios; they appear as extra lines
+  on the chart and side by side in the compare table.
+- **Saved scenarios** — save the current plan under a name, load it later, or
+  delete it. Up to 12 plans are kept with the dashboard state.
+- **Table filters** — all years, milestones only, or shortfalls only.
+- **Dark mode**, copyable text summary, CSV export, and print-friendly styles.
+
+## Saving and sharing
+
+The current scenario and your saved scenarios are encoded in the URL fragment
+(`#s=…`), so:
+
+- Reloading restores your inputs, pinned scenarios, saved library, chart tab,
+  filter, and theme.
+- Copying the URL shares the exact scenario and saved plans.
+- When served over HTTP, it is also mirrored to `localStorage`.
+
+Use **Save** in the header to name the current plan; click **Saved** next to it to
+open the saved list, where you can Load or Delete. Use **Reset** in the header to
+return every input to its default — saved plans are kept.
+
+## Accuracy
+
+The core balance math matches the original engine. The default scenario still
+bottoms out at **$700,175 at age 38** with a **3.8835% real return**. The age-95
+balance is lower than the old Tkinter app because the dashboard now phases in the
+spouse's Medicare cost at your age 62 and halves the household ACA cost for the
+one person still on it.
+
+The new pension paths were checked against hand calculations:
+
+- **VERA at 49** with 25 years: $30,250 nominal, eroding to $20,599 by 62.
+- **MRA+30 at 57** with 33 years: $39,930, COLA from 57.
+- **Deferred at 43** with 19 years: $11,919 at 62.
+
+## Files
+
+| File | Purpose |
+| --- | --- |
+| `index.html` | The whole dashboard (HTML + CSS + JS, no dependencies). |
+| `serve.py` | Optional local server that opens the dashboard in your browser. |
+| `start_dashboard.bat` | Windows launcher for `serve.py`. |
+| `retirement_gui.py` | Original Tkinter desktop app, unchanged. |
+
+## Model assumptions
+
+- All figures are in today's dollars; balances grow at
+  `(1 + nominal return) / (1 + inflation) − 1`.
+- **Service years** are calculated from the federal service start year at the
+  layoff age. The pension multiplier is 1.0% per year, 1.1% at 20+ years.
+- **Pension paths:**
+  - **VERA:** only when the layoff year equals the VERA year, the layoff age
+    equals the VERA age, and service meets the minimum. Starts at the VERA age;
+    the full nominal amount erodes with inflation until the normal pension age,
+    then gets COLA.
+  - **MRA+30:** when the layoff age is at least the MRA age and service meets the
+    minimum. Starts at the layoff age with COLA from the start.
+  - **Normal:** at or after the normal pension age with at least 5 years. Starts
+    at the layoff age with COLA.
+  - **Deferred:** everything else. Starts at the normal pension age, with the
+    nominal amount eroded from the leave year to that age.
+- The spouse is modeled as 3 years older; spouse Social Security starts at your
+  age 59, yours at 62.
+- **Health costs:** zero while anyone is working. ACA is a household amount,
+  halved when only one of you is on it. Medicare is a household amount: half for
+  one person from your age 62 (when your spouse turns 65), full from your 65.
+- Withdrawals come from brokerage first, then TSP once you reach 59½.
+- The mortgage payoff year and month are inputs. The month is the last month
+  with a payment, so June means six months of mortgage spending and six months of
+  savings in that year.
+- The new job starts after the gap and runs until your retirement age. Severance
+  is a **monthly net amount for 1–12 months**, paid from the layoff onward. The
+  year-by-year net need is shown after severance, and the cash-flow chart stacks
+  severance as a gold income segment. If **New job offers health insurance** is
+  on (the default), both of you are treated as covered while you work there, so
+  ACA costs pause until the new job ends. The gap year itself still pays ACA.
+- Projection runs from your current age through 95.
+
+**Note:** the default current age is 38. Set it to **39** to align the default
+VERA year (2036) with age 49.
