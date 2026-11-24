@@ -59,13 +59,11 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   greyed-out `Enter amount` prompt, so the published page shows nobody's real
   figures. Type a number (or drag the slider) and the projection updates.
 - **Pension eligibility** — service start year (years are calculated
-  automatically), VERA age (the VERA service rule is built in: 20 years at 50+,
-  or 25 at any age), the VERA window year (read-only: it is the
-  year you turn that age), the MRA (read-only: it comes from your birth date), the
-  service needed at MRA, and the normal pension age.
+  automatically), the MRA (read-only: it comes from your birth date), the service
+  needed at MRA, and the normal pension age. VERA needs no field of its own:
+  leaving at 50+ with 20 years, or with 25 at any age, counts as an early-out.
 - **Sliders everywhere** — every dollar, year, age, service, and month field is
-  a slider with an editable value chip, except the derived MRA and VERA window
-  year. Dollar ticks are $10k for six-digit
+  a slider with an editable value chip, except the derived MRA. Dollar ticks are $10k for six-digit
   defaults, $1k for five-digit defaults, and $250 for the four-digit fields
   (ACA, mortgage saving, severance). Nominal return and inflation use 0.5%
   ticks. Slider maximums are 3× the default; hover a slider and scroll to nudge
@@ -161,9 +159,8 @@ silently absorbed.
 - **Service years** are calculated from the federal service start year at the
   layoff age. The pension multiplier is 1.0% per year, 1.1% at 20+ years.
 - **Pension paths:**
-  - **VERA:** when the layoff age equals the VERA age (the window year follows
-    from your birth date) and service meets OPM's rule — 20 years at age 50+, or
-    25 years at any age. Starts at the VERA age;
+  - **VERA:** when you separate at 50+ with 20 years, or with 25 years at any age
+    (no separate window). Starts at the layoff age;
     the full nominal amount erodes with inflation until 62, then gets COLA. Also
     pays the **FERS Supplement** from MRA to 62 — not from retirement, so a VERA
     taken at 49 or 54 gets nothing until 57.

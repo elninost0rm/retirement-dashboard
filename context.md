@@ -93,11 +93,11 @@ All figures are in today's dollars. Balances grow at
 - **No COLA before 62** for any regular FERS annuity. An immediate pension is
   frozen in nominal dollars from its start age until 62, then COLA (so its
   today's-dollar value falls each year before 62).
-- **VERA:** when `layoffAge === veraAge` (the window year is derived as the year you
-  turn that age) AND service meets OPM's rule — `layoffAge ≥ 50 && service ≥ 20`,
-  or `service ≥ 25`. Starts at the VERA age; nominal,
-  eroding to 62, then COLA. Pays the **FERS Supplement** from `max(pensionStart,
-  mraAge)` to 62 (5 CFR 842.503(b)(1): a VERA taken before MRA waits until MRA).
+- **VERA:** when `layoffAge ≥ 50 && service ≥ 20`, or `service ≥ 25`. No separate
+  window: an early-out is assumed available whenever you separate and meet the
+  rule. Starts at the layoff age; nominal, eroding to 62, then COLA. Pays the
+  **FERS Supplement** from `max(pensionStart, mraAge)` to 62 (5 CFR 842.503(b)(1):
+  a VERA taken before MRA waits until MRA).
 - **MRA+30:** when `layoffAge ≥ mraAge` and service ≥ `mraService`. Starts at the
   layoff age; nominal until 62, then COLA. Also pays the **FERS Supplement**
   from the start age until 62, ≈ `ss_you × service/40`, with no COLA.
@@ -301,6 +301,13 @@ two pages match; the theme toggle then updates only the compound page.
     single threshold could deny a legal VERA: at 52 with 22 years the app required
     25 and fell back to deferred. Boundaries now check exactly: 50/20 and 49/25
     qualify; 50/19 and 49/24 do not.
+21. Removed the VERA age/window fields entirely. The layoff age is the only "when"
+    control now: separating at 50+ with 20 years, or with 25 at any age, is a
+    VERA. This assumes an early-out is available at separation (documented), which
+    matches a RIF-style plan; it also stopped a 52-year-old with 28 years from
+    being classed as deferred merely because the window age was still set to 49.
+    Precedence is now regular MRA+30, then normal (62/5 or 60/20), then VERA, so a
+    57/33 separation reports MRA+30 rather than VERA.
 
 ## Known assumptions / open items
 
@@ -314,6 +321,8 @@ two pages match; the theme toggle then updates only the compound page.
   ACA subsidies, IRMAA, or medical inflation.
 - Pension COLA is assumed full from age 62 (FERS COLA reductions when inflation
   is low are not modeled). No COLA is paid before 62.
+- A VERA is assumed to be **available at separation** whenever the age/service
+  rule is met. The app no longer models a specific agency window year.
 - The **FERS supplement** (VERA and MRA+30) is modeled gross — `ss_you ×
   service/40` from `max(retirement, MRA)` to 62. The earnings test (reduction for
   wages above the annual exempt amount) and any non-civilian service rules are not
@@ -338,6 +347,9 @@ two pages match; the theme toggle then updates only the compound page.
   54 stays deferred and shows the "No VERA in 2041" banner.
 - VERA service boundaries: 50/20 → VERA, 50/19 → deferred; 49/25 → VERA,
   49/24 → deferred; 52/22 → VERA (previously denied by the 25-year slider).
+- Folding VERA into the layoff: 52 with 28 years → **VERA** at 52 (was deferred
+  unless the window age was also moved); 57/33 → **MRA+30**; 60/20 → **normal**
+  at 60; 43/19 → deferred with no VERA banner.
 - MRA+30 57/33: **$39,930** nominal → **$34,444** by 62 after 5 years without
   COLA; FERS supplement **$15,178**/yr from 57 to 62. Rows 57–61 carry
   `(incl. supplement …)`; the cash-flow chart starts at 57 with salary shaded.
