@@ -69,7 +69,9 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   ticks. Slider maximums are 3× the default; hover a slider and scroll to nudge
   it, Shift+scroll for 10×.
 - **Layoff bridge** — a new-job gap in months, monthly severance for 1–12 months,
-  and a toggle for whether the new job offers health insurance.
+  and a toggle for whether the new job offers health insurance. Severance is
+  grayed out and ignored when an immediate annuity is available (VERA, MRA+30, or
+  normal retirement), since 5 CFR 550.704(b)(5) bars both.
 - **Retiree health** — a "Keep FEHB in retirement" toggle plus a household FEHB
   premium. With an immediate annuity the FEHB cost applies from retirement and
   the ACA premium is dimmed and ignored; a deferred annuity can't keep FEHB, so
@@ -189,7 +191,10 @@ silently absorbed.
   with a payment, so June means six months of mortgage spending and six months of
   savings in that year.
 - The new job starts after the gap and runs until your retirement age. Severance
-  is a **monthly net amount for 1–12 months**, paid from the layoff onward. The
+  is a **monthly net amount for 1–12 months**, paid from the layoff onward, but
+  only when your pension is **deferred** — eligibility for an immediate annuity
+  (VERA, MRA+30, or normal retirement) bars severance under 5 CFR 550.704(b)(5),
+  so those sliders dim and the amount is ignored. The
   year-by-year net need is shown after severance, and the cash-flow chart stacks
   severance as a gold income segment. If **New job offers health insurance** is
   on (the default), both of you are treated as covered while you work there, so

@@ -907,6 +907,7 @@
           <input type="checkbox" id="newJobHealth">
           <span>New job offers health insurance</span>
         </label>
+        <div class="hint-line" id="severanceHint" hidden></div>
       </section>
 
       <section class="group">
@@ -1215,6 +1216,9 @@ function calculateScenario(inputs) {
     pensionMode = "deferred";
     pensionStart = normalPensionAge;
   }
+  // 5 CFR 550.704(b)(5): severance is barred when an immediate annuity is
+  // available at separation. Only a deferred pension leaves severance payable.
+  const severanceEligible = pensionMode === "deferred";
 
   // FEHB continues only with an immediate annuity (VERA / MRA+30 / normal).
   // A deferred annuity has no FEHB, so those plans fall back to ACA.
@@ -1319,7 +1323,7 @@ function calculateScenario(inputs) {
     const severanceMonthsThisYear = age >= layoffAge
       ? clamp(severanceMonths - (age - layoffAge) * 12, 0, 12)
       : 0;
-    const severanceThisYear = severanceMonthly * severanceMonthsThisYear;
+    const severanceThisYear = severanceEligible ? severanceMonthly * severanceMonthsThisYear : 0;
     if (severanceThisYear > 0) brokerage += severanceThisYear;
 
     const bothRetired = age >= Math.max(yourRetireAge, spouseRetireAge - 3);
@@ -1412,7 +1416,7 @@ function calculateScenario(inputs) {
     const events = [];
     if (age === layoffAge) {
       events.push("Layoff");
-      if (severanceMonthly > 0 && severanceMonths > 0) {
+      if (severanceEligible && severanceMonthly > 0 && severanceMonths > 0) {
         events.push(`Severance (${severanceMonths} mo)`);
       }
     }
@@ -2301,6 +2305,21 @@ function updateCoverageNote(result) {
 
   if (acaRow) acaRow.classList.toggle("is-unused", active);
   if (fehbRow) fehbRow.classList.toggle("is-unused", !active);
+
+  // 5 CFR 550.704(b)(5): an immediate annuity (VERA, MRA+30, normal) bars severance.
+  const sevRows = ["m_severance_monthly", "m_severance_months"]
+    .map(id => document.getElementById(id)?.closest(".slider-row"))
+    .filter(Boolean);
+  const mode = result && result.pension ? result.pension.mode : null;
+  const immediate = mode === "vera" || mode === "mra" || mode === "normal";
+  sevRows.forEach(r => r.classList.toggle("is-unused", immediate));
+  const sevHint = $("severanceHint");
+  if (sevHint) {
+    sevHint.hidden = !immediate;
+    sevHint.innerHTML = immediate
+      ? `<b>No severance</b> — ${mode === "vera" ? "VERA" : (mode === "mra" ? "MRA+30" : "an immediate pension")} is an immediate annuity, and 5 CFR 550.704(b)(5) bars severance when one is available.`
+      : "";
+  }
 
   if (!hint) return;
   if (active) {

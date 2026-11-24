@@ -140,6 +140,10 @@ All figures are in today's dollars. Balances grow at
   before). It is a cash inflow to brokerage; the table note shows it separately
   and the cash-flow chart stacks it as a gold income segment. “Net need” is
   shown **after** severance.
+- Severance is paid **only with a deferred pension**. Eligibility for an immediate
+  annuity (VERA, MRA+30, normal) bars it under 5 CFR 550.704(b)(5), so the engine
+  zeroes it and the two severance sliders dim with a note. Values are kept, so
+  they return if the layoff moves back to a non-immediate year.
 - Base spending includes the mortgage until the payoff. Payoff year/month are
   inputs (default 2049/June); the month is the last payment month, so June means
   6 months mortgage + 6 months savings in the payoff year.
@@ -313,6 +317,10 @@ two pages match; the theme toggle then updates only the compound page.
     (overwrite in place, optionally renaming) alongside **Save as new**; the
     library marks that row `editing`. Previously every save created a new entry —
     retyping an existing name produced "Name (2)" rather than overwriting.
+23. Severance is now barred when an immediate annuity is available (VERA, MRA+30,
+    normal), per 5 CFR 550.704(b)(5). The engine zeroes it and both sliders dim
+    with an explanatory hint; the stored amounts are kept so they return if the
+    layoff moves back to a deferred year.
 
 ## Known assumptions / open items
 
@@ -328,6 +336,9 @@ two pages match; the theme toggle then updates only the compound page.
   is low are not modeled). No COLA is paid before 62.
 - A VERA is assumed to be **available at separation** whenever the age/service
   rule is met. The app no longer models a specific agency window year.
+- MRA+10 (leaving at MRA with 10–29 years) is still treated as a deferred pension.
+  In reality it is an immediate annuity reduced 5%/yr under 62, with no supplement
+  and no severance. This only affects layoffs at or after MRA without 30 years.
 - The **FERS supplement** (VERA and MRA+30) is modeled gross — `ss_you ×
   service/40` from `max(retirement, MRA)` to 62. The earnings test (reduction for
   wages above the annual exempt amount) and any non-civilian service rules are not
@@ -369,6 +380,10 @@ two pages match; the theme toggle then updates only the compound page.
 - Severance $5,016/mo × 12 with $60,192 spend: note shows
   `Spend $60,192 · Gtd Inc $0 · Severance $60,192 · Net need $0`; cash-flow
   portfolio draw $0.
+- Severance exclusion: with $5k/mo × 6, layoff 43 (deferred) pays $30,000 and the
+  sliders stay active; layoff 49 (VERA), 57 (MRA+30) and 62 all zero it, dim both
+  severance rows, and show the 5 CFR 550.704(b)(5) hint. The value returns when
+  the layoff moves back to 43.
 - Saved scenarios persist across reload, load correctly, and delete; no console
   errors in the tested flows.
 - Save/update flow: a new save becomes the active plan; reopening Save pre-fills
