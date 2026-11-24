@@ -1090,8 +1090,9 @@
             Figures are in today's dollars and grow at <b>(1 + nominal return) / (1 + inflation) − 1</b>.
             Service years are calculated from your federal start year. Pension paths: <b>VERA</b> at the VERA
             age/year with the minimum service (full nominal, eroding to 62, then COLA);
-            <b>MRA+30</b> at the MRA age with the minimum service (nominal until COLA at 62, plus a FERS
-            supplement of Social Security &times; service/40 until 62); otherwise
+            <b>MRA+30</b> at the MRA age with the minimum service (nominal until COLA at 62), plus a FERS
+            supplement of Social Security &times; service/40 from MRA to 62 — also paid on a <b>VERA</b>
+            taken before MRA, but not until MRA; otherwise
             <b>deferred</b> to the normal pension age and eroded from your leave age. No FERS COLA is paid
             before 62. The multiplier is 1.0%
             per service year, 1.1% at 20+ years. The spouse is modeled as 3 years older; spouse Social
@@ -1233,14 +1234,19 @@ function calculateScenario(inputs) {
     return nominalPension / Math.pow(1 + inflation, Math.max(0, frozenUntil - pensionStart));
   }
 
-  // FERS Supplement: paid from an MRA+30 retirement until 62, roughly the age-62
-  // Social Security benefit prorated by service/40. It has no COLA.
-  const supplementNominal = pensionMode === "mra"
+  // FERS annuity supplement (5 CFR 842.503). Payable with an immediate unreduced
+  // annuity — MRA+30, 60+20, or a VERA/early-out — prorated by service/40. A VERA
+  // taken before MRA is not payable until MRA. Deferred, disability and MRA+10
+  // annuities get none. It has no COLA.
+  const supplementEligible = pensionMode === "vera" || pensionMode === "mra" ||
+    (pensionMode === "normal" && pensionStart < colaAge && serviceAtLayoff >= 20);
+  const supplementStartAge = supplementEligible ? Math.max(pensionStart, mraAge) : null;
+  const supplementNominal = (supplementEligible && supplementStartAge < colaAge)
     ? Math.min(1, serviceAtLayoff / 40) * ssYou
     : 0;
   function supplementAt(age) {
-    if (supplementNominal <= 0 || age < pensionStart || age >= colaAge) return 0;
-    return supplementNominal / Math.pow(1 + inflation, age - pensionStart);
+    if (supplementNominal <= 0 || age < supplementStartAge || age >= colaAge) return 0;
+    return supplementNominal / Math.pow(1 + inflation, age - supplementStartAge);
   }
 
   const gapYears = gapMonths / 12;
@@ -1411,7 +1417,7 @@ function calculateScenario(inputs) {
         ? "Pension begins (VERA)"
         : (pensionMode === "mra" ? "Pension begins (MRA+30)" : "Pension begins"));
     }
-    if (supplementNominal > 0 && age === pensionStart) events.push("FERS supplement begins");
+    if (supplementNominal > 0 && age === supplementStartAge) events.push("FERS supplement begins");
     if (supplementNominal > 0 && age === colaAge) events.push("FERS supplement ends");
     if (gapMonths > 0 && age === Math.ceil(newJobStartAge) && age < yourRetireAge) {
       events.push("New job begins");
@@ -1479,6 +1485,7 @@ function calculateScenario(inputs) {
     brokerage_failed_pre59: brokerageFailedPre59,
     unfunded_total: unfundedTotal,
     fers_supplement: supplementNominal,
+    fers_supplement_start_age: supplementStartAge,
     fers_supplement_end_age: colaAge,
     pension_mode: pensionMode,
     fehb_eligible: fehbEligible,
@@ -2292,15 +2299,18 @@ function render() {
   $("railSub").textContent = `Layoff ${v.layoff_age} · Retire ${v.your_retire_age} · ${Number(v.nominal_return).toFixed(1)}% return`;
 
   const p = result.pension;
+  const supAmt = Number(result.extra.fers_supplement) || 0;
+  const supStart = result.extra.fers_supplement_start_age;
+  const supHint = supAmt > 0
+    ? `, plus a FERS supplement of ${money(supAmt)}/yr from ${supStart} to ${p.colaAge}`
+    : "";
   let pensionHint;
   if (p.mode === "vera") {
-    pensionHint = `<b>VERA pension</b> at ${p.startAge} — ${money(p.nominal)}/yr nominal, erodes to ${money(p.at62)} by ${p.colaAge}, then COLA.`;
+    pensionHint = `<b>VERA pension</b> at ${p.startAge} — ${money(p.nominal)}/yr nominal, erodes to ${money(p.at62)} by ${p.colaAge}, then COLA${supHint}.`;
   } else if (p.mode === "mra") {
-    const sup = Number(result.extra.fers_supplement) || 0;
-    pensionHint = `<b>MRA+30 pension</b> at ${p.startAge} — ${p.serviceYears} years, ${money(p.nominal)}/yr frozen until COLA at ${p.colaAge}` +
-      (sup > 0 ? `, plus a FERS supplement of ${money(sup)}/yr until ${p.colaAge}.` : ".");
+    pensionHint = `<b>MRA+30 pension</b> at ${p.startAge} — ${p.serviceYears} years, ${money(p.nominal)}/yr frozen until COLA at ${p.colaAge}${supHint}.`;
   } else if (p.mode === "normal") {
-    pensionHint = `<b>Immediate pension</b> at ${p.startAge} — ${p.serviceYears} years, ${money(p.nominal)}/yr, COLA from ${p.colaAge}.`;
+    pensionHint = `<b>Immediate pension</b> at ${p.startAge} — ${p.serviceYears} years, ${money(p.nominal)}/yr, COLA from ${p.colaAge}${supHint}.`;
   } else {
     pensionHint = `<b>Deferred pension</b> at ${p.startAge} — eroded ${p.erosionYears} yr(s) from your leave age. Value ≈ ${money(p.real)}/yr.`;
   }
@@ -2417,12 +2427,17 @@ function renderBanners(result, errors) {
         </div>`);
     }
     const p = result.pension;
+    const supAmt = Number(result.extra.fers_supplement) || 0;
+    const supStart = result.extra.fers_supplement_start_age;
+    const supNote = supAmt > 0
+      ? `, plus a FERS supplement of ${money(supAmt)}/yr from ${supStart} to ${p.colaAge}`
+      : "";
     if (p.mode === "vera") {
       parts.push(`
         <div class="banner info">
           <span class="ico">${ICONS.info}</span>
           <div><b>VERA pension at ${p.startAge}</b> — full nominal ${money(p.nominal)}/yr, eroding to
-          ${money(p.at62)} by ${p.colaAge}, then COLA.</div>
+          ${money(p.at62)} by ${p.colaAge}, then COLA${supNote}.</div>
         </div>`);
     } else if (p.mode === "deferred") {
       parts.push(`
@@ -2436,9 +2451,7 @@ function renderBanners(result, errors) {
         <div class="banner info">
           <span class="ico">${ICONS.info}</span>
           <div><b>MRA+30 pension at ${p.startAge}</b> — ${p.serviceYears} years of service; frozen in
-          nominal dollars until COLA begins at ${p.colaAge}${result.extra.fers_supplement > 0
-            ? `, plus a FERS supplement of ${money(result.extra.fers_supplement)}/yr until ${p.colaAge}`
-            : ""}.</div>
+          nominal dollars until COLA begins at ${p.colaAge}${supNote}.</div>
         </div>`);
     }
     if (result.extra.brokerage_failed_pre59) {
@@ -3292,7 +3305,7 @@ function summaryText() {
     pensionLine
   ];
   if (r.extra.fers_supplement > 0) {
-    lines.push(`FERS supplement: ${money(r.extra.fers_supplement)}/yr until ${r.extra.fers_supplement_end_age}`);
+    lines.push(`FERS supplement: ${money(r.extra.fers_supplement)}/yr from ${r.extra.fers_supplement_start_age} to ${r.extra.fers_supplement_end_age}`);
   }
   if (v.stress_enabled) {
     lines.push(`Stress: ${Number(v.stress_real_return).toFixed(0)}% real return, ages ${v.stress_start_age}–${v.stress_end_age}`);
