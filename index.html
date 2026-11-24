@@ -1095,7 +1095,8 @@
             to 62, then COLA);
             <b>MRA+30</b> at your MRA with the required service (nominal until COLA at 62), plus a FERS
             supplement of Social Security &times; service/40 from MRA to 62 — also paid on a <b>VERA</b>
-            taken before MRA, but not until MRA; otherwise
+            taken before MRA, but not until MRA; <b>MRA+10</b> (MRA with 10–29 years) pays at
+            separation but is reduced 5% for each year under 62 and gets no supplement; otherwise
             <b>deferred</b> to the normal pension age and eroded from your leave age. No FERS COLA is paid
             before 62. The multiplier is 1.0%
             per service year, 1.1% at 20+ years. The spouse is modeled as 3 years older; spouse Social
@@ -1201,6 +1202,8 @@ function calculateScenario(inputs) {
   // Optional retirement at 62/5, or 60/20. A VERA only applies when neither does.
   const normalEligible = (layoffAge >= normalPensionAge && serviceAtLayoff >= 5) ||
     (layoffAge >= 60 && serviceAtLayoff >= 20);
+  // MRA+10: at MRA with 10-29 years — immediate but reduced 5%/yr under 62.
+  const mra10Eligible = layoffAge >= mraAge && serviceAtLayoff >= 10;
 
   let pensionMode, pensionStart;
   if (mraEligible) {
@@ -1211,6 +1214,9 @@ function calculateScenario(inputs) {
     pensionStart = layoffAge;
   } else if (veraEligible) {
     pensionMode = "vera";
+    pensionStart = layoffAge;
+  } else if (mra10Eligible) {
+    pensionMode = "mra10";
     pensionStart = layoffAge;
   } else {
     pensionMode = "deferred";
@@ -1226,7 +1232,12 @@ function calculateScenario(inputs) {
   const retireeFehb = fehbEnabled && fehbEligible;
 
   const normalRealReturn = (1 + nominalReturn) / (1 + inflation) - 1;
-  const nominalPension = high3 * serviceAtLayoff * (serviceAtLayoff < 20 ? 0.01 : 0.011);
+  // MRA+10 is permanently reduced 5% for each year under 62.
+  const mra10Reduction = pensionMode === "mra10"
+    ? 0.05 * Math.max(0, colaAge - pensionStart)
+    : 0;
+  const nominalPension = high3 * serviceAtLayoff *
+    (serviceAtLayoff < 20 ? 0.01 : 0.011) * (1 - mra10Reduction);
   // No COLA before 62: an immediate annuity is frozen in nominal dollars until
   // then, and a deferred annuity only begins at the normal pension age.
   const erosionYears = pensionMode === "deferred"
@@ -1423,7 +1434,9 @@ function calculateScenario(inputs) {
     if (age === pensionStart && pensionStart !== normalPensionAge) {
       events.push(pensionMode === "vera"
         ? "Pension begins (VERA)"
-        : (pensionMode === "mra" ? "Pension begins (MRA+30)" : "Pension begins"));
+        : pensionMode === "mra"
+          ? "Pension begins (MRA+30)"
+          : pensionMode === "mra10" ? "Pension begins (MRA+10, reduced)" : "Pension begins");
     }
     if (supplementNominal > 0 && age === supplementStartAge) events.push("FERS supplement begins");
     if (supplementNominal > 0 && age === colaAge) events.push("FERS supplement ends");
@@ -1516,6 +1529,7 @@ function calculateScenario(inputs) {
       colaAge: colaAge,
       erosionYears: erosionYears,
       nominal: nominalPension,
+      reduction: mra10Reduction,
       real: pensionAt(pensionStart),
       at62: pensionAt(colaAge),
       serviceYears: serviceAtLayoff
@@ -2311,13 +2325,17 @@ function updateCoverageNote(result) {
     .map(id => document.getElementById(id)?.closest(".slider-row"))
     .filter(Boolean);
   const mode = result && result.pension ? result.pension.mode : null;
-  const immediate = mode === "vera" || mode === "mra" || mode === "normal";
+  const immediate = mode === "vera" || mode === "mra" || mode === "normal" || mode === "mra10";
   sevRows.forEach(r => r.classList.toggle("is-unused", immediate));
   const sevHint = $("severanceHint");
   if (sevHint) {
     sevHint.hidden = !immediate;
+    const modeLabel = mode === "vera" ? "VERA"
+      : mode === "mra" ? "MRA+30"
+        : mode === "mra10" ? "MRA+10"
+          : "an immediate pension";
     sevHint.innerHTML = immediate
-      ? `<b>No severance</b> — ${mode === "vera" ? "VERA" : (mode === "mra" ? "MRA+30" : "an immediate pension")} is an immediate annuity, and 5 CFR 550.704(b)(5) bars severance when one is available.`
+      ? `<b>No severance</b> — ${modeLabel} is an immediate annuity, and 5 CFR 550.704(b)(5) bars severance when one is available.`
       : "";
   }
 
@@ -2379,6 +2397,8 @@ function render() {
     pensionHint = `<b>MRA+30 pension</b> at ${p.startAge} — ${p.serviceYears} years, ${money(p.nominal)}/yr frozen until COLA at ${p.colaAge}${supHint}.`;
   } else if (p.mode === "normal") {
     pensionHint = `<b>Immediate pension</b> at ${p.startAge} — ${p.serviceYears} years, ${money(p.nominal)}/yr, COLA from ${p.colaAge}${supHint}.`;
+  } else if (p.mode === "mra10") {
+    pensionHint = `<b>MRA+10 pension</b> at ${p.startAge} — ${p.serviceYears} years, ${money(p.nominal)}/yr, permanently reduced ${Math.round(p.reduction * 100)}% for starting before ${p.colaAge}; no supplement, COLA at ${p.colaAge}.`;
   } else {
     pensionHint = `<b>Deferred pension</b> at ${p.startAge} — eroded ${p.erosionYears} yr(s) from your leave age. Value ≈ ${money(p.real)}/yr.`;
   }
@@ -2533,6 +2553,15 @@ function renderBanners(result, errors) {
           <span class="ico">${ICONS.info}</span>
           <div><b>MRA+30 pension at ${p.startAge}</b> — ${p.serviceYears} years of service; frozen in
           nominal dollars until COLA begins at ${p.colaAge}${supNote}.</div>
+        </div>`);
+    } else if (p.mode === "mra10") {
+      parts.push(`
+        <div class="banner info">
+          <span class="ico">${ICONS.info}</span>
+          <div><b>MRA+10 pension at ${p.startAge}</b> — ${p.serviceYears} years of service,
+          permanently reduced ${Math.round(p.reduction * 100)}% (5% for each year under
+          ${p.colaAge}). No FERS supplement, and severance is not payable with an
+          immediate annuity.</div>
         </div>`);
     }
     if (result.extra.brokerage_failed_pre59) {
@@ -3409,7 +3438,9 @@ function summaryText() {
     ? `Pension: VERA at ${p.startAge} · ${money(p.nominal)} nominal, ${money(p.at62)} by ${p.colaAge}`
     : p.mode === "deferred"
       ? `Pension: deferred to ${p.startAge} · ${money(p.real)}/yr`
-      : `Pension: ${p.mode === "mra" ? "MRA+30" : "immediate"} at ${p.startAge} · ${money(p.nominal)}/yr (COLA at ${p.colaAge})`;
+      : p.mode === "mra10"
+        ? `Pension: MRA+10 at ${p.startAge} · ${money(p.nominal)}/yr (reduced ${Math.round(p.reduction * 100)}%, no supplement)`
+        : `Pension: ${p.mode === "mra" ? "MRA+30" : "immediate"} at ${p.startAge} · ${money(p.nominal)}/yr (COLA at ${p.colaAge})`;
   const lines = [
     "Retirement projection (today's dollars)",
     `Minimum portfolio: ${money(r.summary.minTotal)} at age ${r.summary.minAge}`,

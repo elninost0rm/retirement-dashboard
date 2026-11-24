@@ -101,6 +101,10 @@ All figures are in today's dollars. Balances grow at
 - **MRA+30:** when `layoffAge ≥ mraAge` and service ≥ `mraService`. Starts at the
   layoff age; nominal until 62, then COLA. Also pays the **FERS Supplement**
   from the start age until 62, ≈ `ss_you × service/40`, with no COLA.
+- **MRA+10:** when `layoffAge ≥ mraAge` and service ≥ 10 but below the MRA+30
+  threshold and no VERA. Starts at the layoff age, but the nominal annuity is
+  **reduced 5% for each year under 62** (annual approximation of 5/12 of 1% per
+  month). No supplement. FEHB continues; severance is barred.
 - **Normal:** when `layoffAge ≥ normalPensionAge` and service ≥ 5. Starts at the
   layoff age; COLA applies from 62. Gets a supplement only for a 60+20 retirement
   before 62.
@@ -109,7 +113,9 @@ All figures are in today's dollars. Balances grow at
 - Pension income is counted **while still working** the new job (bug fixed).
 - Example: VERA at 49 with 25 years = $30,250 nominal, $20,599 by 62; MRA+30 at
   57 with 33 years = $39,930 nominal, $34,444 by 62, plus a $15,178/yr FERS
-  supplement until 62; deferred at 43 with 19 years = $11,919 at 62.
+  supplement until 62; MRA+10 at 57 with 19 years = $20,900 × 75% = $15,675
+  nominal (25% reduction), no supplement; deferred at 43 with 19 years = $11,919
+  at 62.
 
 ### Health
 
@@ -321,6 +327,12 @@ two pages match; the theme toggle then updates only the compound page.
     normal), per 5 CFR 550.704(b)(5). The engine zeroes it and both sliders dim
     with an explanatory hint; the stored amounts are kept so they return if the
     layoff moves back to a deferred year.
+24. Added **MRA+10**: at MRA with 10–29 years (and no VERA) the pension now starts
+    at separation, permanently reduced 5% per year under 62, with no supplement.
+    It keeps FEHB and bars severance. Implemented for the quit-and-return case
+    that can leave you short of both 30 years and a VERA; a mid-career break is
+    still approximated by moving Service start later. Validated against the ledger
+    with a new 57/19 scenario (57/57 rows).
 
 ## Known assumptions / open items
 
@@ -336,9 +348,12 @@ two pages match; the theme toggle then updates only the compound page.
   is low are not modeled). No COLA is paid before 62.
 - A VERA is assumed to be **available at separation** whenever the age/service
   rule is met. The app no longer models a specific agency window year.
-- MRA+10 (leaving at MRA with 10–29 years) is still treated as a deferred pension.
-  In reality it is an immediate annuity reduced 5%/yr under 62, with no supplement
-  and no severance. This only affects layoffs at or after MRA without 30 years.
+- MRA+10 uses a **5%-per-year** reduction (the annual approximation of OPM's
+  5/12 of 1% per month under 62), so a mid-year birthday can shift it by up to
+  about 5%. It assumes the annuity is not postponed.
+- Service is one **continuous span** from Service start to layoff. A mid-career
+  break isn't modeled directly: to approximate it, move Service start later so the
+  years at layoff match the creditable total (the slider caps at the current year).
 - The **FERS supplement** (VERA and MRA+30) is modeled gross — `ss_you ×
   service/40` from `max(retirement, MRA)` to 62. The earnings test (reduction for
   wages above the annual exempt amount) and any non-civilian service rules are not
@@ -366,6 +381,9 @@ two pages match; the theme toggle then updates only the compound page.
 - Folding VERA into the layoff: 52 with 28 years → **VERA** at 52 (was deferred
   unless the window age was also moved); 57/33 → **MRA+30**; 60/20 → **normal**
   at 60; 43/19 → deferred with no VERA banner.
+- MRA+10: 57 with 19 years → pension at 57, $20,900 × 75% = **$15,675** nominal
+  (25% reduction), no supplement, FEHB on, severance dimmed; at 58 with 19 years
+  the reduction is 20%. 57 with 9 years stays deferred with severance payable.
 - MRA+30 57/33: **$39,930** nominal → **$34,444** by 62 after 5 years without
   COLA; FERS supplement **$15,178**/yr from 57 to 62. Rows 57–61 carry
   `(incl. supplement …)`; the cash-flow chart starts at 57 with salary shaded.

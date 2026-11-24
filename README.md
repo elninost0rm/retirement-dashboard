@@ -131,6 +131,8 @@ The new pension paths were checked against hand calculations:
   plus a $11,498 supplement from 57 to 62.
 - **MRA+30 at 57** with 33 years: $39,930 nominal, eroding to $34,444 by 62,
   plus a FERS supplement of $15,178/yr until 62.
+- **MRA+10 at 57** with 19 years: $20,900 × 75% = $15,675 nominal, reduced 25% for
+  life, no supplement, $13,521 in today's dollars at 62.
 - **Deferred at 43** with 19 years: $11,919 at 62.
 
 The engine was then audited outside the browser and compared year by year against
@@ -170,6 +172,9 @@ silently absorbed.
   - **MRA+30:** when the layoff age is at least the MRA age and service meets the
     minimum. Starts at the layoff age; nominal until COLA begins at 62. Also pays
     the **FERS Supplement** (about SS × service/40) from retirement to 62.
+  - **MRA+10:** at MRA with 10–29 years (and short of a VERA). Starts at the layoff
+    age but is **permanently reduced 5% for each year under 62**, gets no FERS
+    supplement, and still keeps FEHB.
   - **Normal:** at or after the normal pension age with at least 5 years. Starts
     at the layoff age; COLA applies from 62.
   - **Deferred:** everything else. Starts at the normal pension age, with the
@@ -179,7 +184,7 @@ silently absorbed.
 - The FERS supplement (VERA and MRA+30 plans) is modeled gross, before the
   earnings test; it ends at 62 and has no COLA.
 - **Health costs:** zero while anyone is working. Retiring on an **immediate**
-  annuity (VERA, MRA+30, or normal) keeps **FEHB**: the household FEHB premium is
+  annuity (VERA, MRA+30, MRA+10, or normal) keeps **FEHB**: the household FEHB premium is
   paid from the retirement year for life, with Medicare added as each of you turns
   65. On a **deferred** annuity FEHB is not available, and with the toggle off you
   use **ACA** instead. ACA is a household amount, halved when only one of you is
@@ -193,7 +198,7 @@ silently absorbed.
 - The new job starts after the gap and runs until your retirement age. Severance
   is a **monthly net amount for 1–12 months**, paid from the layoff onward, but
   only when your pension is **deferred** — eligibility for an immediate annuity
-  (VERA, MRA+30, or normal retirement) bars severance under 5 CFR 550.704(b)(5),
+  (VERA, MRA+30, MRA+10, or normal retirement) bars severance under 5 CFR 550.704(b)(5),
   so those sliders dim and the amount is ignored. The
   year-by-year net need is shown after severance, and the cash-flow chart stacks
   severance as a gold income segment. If **New job offers health insurance** is
