@@ -66,7 +66,8 @@ No build step or dependencies. The original Tkinter app is untouched.
 - Returns: nominal 7.0%, inflation 3.0% → real 3.8835%.
 - Mortgage payoff: June 2049.
 - Pension rules: service start 2011; VERA 2036 / age 49 / 25 years;
-  MRA+30 age 57 / 30 years; normal pension age 62.
+  MRA 57 (derived from the 1987 birth date) / 30 years needed at MRA; normal
+  pension age 62.
 - New-job gap 0 months; severance $0/mo for 1 month; new-job health coverage on;
   FEHB kept in retirement on.
 - Stress test off; projection through age 95.
@@ -282,6 +283,11 @@ two pages match; the theme toggle then updates only the compound page.
     was modeled and VERA got nothing. A VERA taken at or after MRA pays
     immediately; a 60+20 normal retirement before 62 also qualifies; deferred and
     MRA+10 get none.
+18. MRA is now **derived from the birth date** (5 U.S.C. 842.202: 55–57 depending
+    on birth year; 57 for 1970+) instead of an editable "MRA+30 age" slider. The
+    row shows the value read-only, and the companion field is renamed "Service
+    needed at MRA". A fractional MRA rounds to the nearest birthday in the annual
+    model. This removes the ability to set an MRA that does not legally exist.
 
 ## Known assumptions / open items
 

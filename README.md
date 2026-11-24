@@ -59,10 +59,10 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   greyed-out `Enter amount` prompt, so the published page shows nobody's real
   figures. Type a number (or drag the slider) and the projection updates.
 - **Pension eligibility** — service start year (years are calculated
-  automatically), VERA year/age/service, MRA+30 age/service, and the normal
-  pension age.
+  automatically), VERA year/age/service, the MRA (read-only: it comes from your
+  birth date), the service needed at MRA, and the normal pension age.
 - **Sliders everywhere** — every dollar, year, age, service, and month field is
-  a slider with an editable value chip. Dollar ticks are $10k for six-digit
+  a slider with an editable value chip, except the derived MRA. Dollar ticks are $10k for six-digit
   defaults, $1k for five-digit defaults, and $250 for the four-digit fields
   (ACA, mortgage saving, severance). Nominal return and inflation use 0.5%
   ticks. Slider maximums are 3× the default; hover a slider and scroll to nudge

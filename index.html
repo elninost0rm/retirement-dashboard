@@ -401,6 +401,7 @@
     font-size:11px;color:var(--muted);line-height:1.45;
   }
   .hint-line b{color:var(--ink-2);font-weight:650}
+  .derived-note{margin-top:2px;font-size:11px;color:var(--muted);line-height:1.45}
 
   .date-wrap{min-width:132px}
   .val-wrap input[type=date]{
@@ -1090,7 +1091,7 @@
             Figures are in today's dollars and grow at <b>(1 + nominal return) / (1 + inflation) − 1</b>.
             Service years are calculated from your federal start year. Pension paths: <b>VERA</b> at the VERA
             age/year with the minimum service (full nominal, eroding to 62, then COLA);
-            <b>MRA+30</b> at the MRA age with the minimum service (nominal until COLA at 62), plus a FERS
+            <b>MRA+30</b> at your MRA with the required service (nominal until COLA at 62), plus a FERS
             supplement of Social Security &times; service/40 from MRA to 62 — also paid on a <b>VERA</b>
             taken before MRA, but not until MRA; otherwise
             <b>deferred</b> to the normal pension age and eroded from your leave age. No FERS COLA is paid
@@ -1620,8 +1621,8 @@ const MONEY_GROUPS = [
     ["vera_year", "VERA year", "year", "The early-out window year (2036)."],
     ["vera_age", "VERA age", "yrs", "Age the VERA is available (49)."],
     ["vera_service", "VERA service", "yrs", "Minimum service years for the VERA (25)."],
-    ["mra_age", "MRA+30 age", "yrs", "Age for an unreduced MRA+30 retirement (57)."],
-    ["mra_service", "MRA+30 service", "yrs", "Minimum service years for MRA+30 (30)."],
+    ["mra_age", "MRA", "yrs", "Fixed by your birth year — the earliest you can retire with an unreduced annuity without a VERA."],
+    ["mra_service", "Service needed at MRA", "yrs", "Years of service required to retire at MRA with an unreduced annuity (30)."],
     ["normal_pension_age", "Normal pension age", "yrs", "Deferred/normal pension start age (62)."]
   ]}
 ];
@@ -1656,7 +1657,6 @@ function sliderSpec(key, unit) {
   if (key === "payoff_year") return { min: 2026, max: 2060, step: 1 };
   if (key === "vera_age") return { min: 40, max: 65, step: 1 };
   if (key === "vera_service") return { min: 0, max: 40, step: 1 };
-  if (key === "mra_age") return { min: 50, max: 70, step: 1 };
   if (key === "mra_service") return { min: 0, max: 40, step: 1 };
   if (key === "normal_pension_age") return { min: 55, max: 70, step: 1 };
   if (key === "stress_real_return") return { min: -10, max: 10, step: 0.5 };
@@ -1843,9 +1843,25 @@ function ageDetail(s, now = new Date()) {
   };
 }
 /** Whole years today become the engine's current age. */
+// MRA is fixed by birth year (5 U.S.C. 842.202), not something you choose.
+function fersMraDetail(birthdate) {
+  const y = Number(String(birthdate || "").slice(0, 4));
+  if (!y) return null;
+  if (y < 1948) return { years: 55, months: 0 };
+  if (y <= 1952) return { years: 55, months: (y - 1947) * 2 };
+  if (y <= 1964) return { years: 56, months: 0 };
+  if (y <= 1969) return { years: 56, months: (y - 1964) * 2 };
+  return { years: 57, months: 0 };
+}
+function fersMraAge(birthdate) {
+  const d = fersMraDetail(birthdate);
+  // The engine is annual, so a fractional MRA rounds to the nearest birthday.
+  return d ? Math.round(d.years + d.months / 12) : 57;
+}
 function applyBirthdate() {
   const d = ageDetail(state.values.birthdate);
   if (d) state.values.current_age = d.years;
+  state.values.mra_age = fersMraAge(state.values.birthdate);
 }
 function renderAgeHint() {
   const el = $("ageHint");
@@ -1889,10 +1905,23 @@ function nudgeSlider(el, e) {
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+// Fields shown read-only because they are derived, not chosen.
+const DERIVED_KEYS = new Set(["mra_age"]);
+
 function buildControls() {
   MONEY_GROUPS.forEach(group => {
     const mount = $(group.mount);
     mount.innerHTML = group.fields.map(([key, label, unit, help]) => {
+      if (DERIVED_KEYS.has(key)) {
+        return `
+        <div class="slider-row">
+          <div class="slider-head">
+            <label title="${esc(help)}">${label}</label>
+            <span class="val" id="v_${key}">—</span>
+          </div>
+          <div class="derived-note">${esc(help)}</div>
+        </div>`;
+      }
       const spec = sliderSpec(key, unit);
       const isMoney = unit === "$";
       const prefix = isMoney ? `<span class="prefix">$</span>` : "";
@@ -2163,6 +2192,13 @@ function syncAllControls() {
     setFill(el);
     $(`v_${s.key}`).textContent = s.fmt === "pct" ? Number(v).toFixed(1) + "%" : String(Math.round(v));
   });
+
+  const mraEl = $("v_mra_age");
+  if (mraEl) {
+    const d = fersMraDetail(state.values.birthdate);
+    mraEl.textContent = !d ? "—"
+      : `${d.years}${d.months ? ` yrs ${d.months} mos` : " yrs"}`;
+  }
 
   $("stressToggle").checked = !!state.values.stress_enabled;
   $("stressBody").hidden = !state.values.stress_enabled;
