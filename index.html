@@ -39,6 +39,7 @@
     --chart-spend:#b5652d;
     --chart-severance:#b07d1a;
     --chart-supplement:#7a5ea8;
+    --chart-salary:#7b8794;
     --pin-1:#b07d1a;
     --pin-2:#7a5ab5;
     --pin-3:#b64f76;
@@ -92,6 +93,7 @@
     --chart-spend:#e0a15c;
     --chart-severance:#e0b34a;
     --chart-supplement:#b39ddb;
+    --chart-salary:#8fa0b3;
     --pin-1:#e0b34a;
     --pin-2:#a78bfa;
     --pin-3:#f472b6;
@@ -1340,6 +1342,7 @@ function calculateScenario(inputs) {
 
     // ----- Withdrawals / surplus reinvestment -----
     let baseNote = "";
+    const supPart = supplement > 0 ? ` (incl. supplement ${money(supplement)})` : "";
 
     if (bothRetired) {
       const netCashflow = guaranteedIncome - totalSpend;
@@ -1364,11 +1367,11 @@ function calculateScenario(inputs) {
       const sevPart = severanceThisYear > 0 ? `, Severance: ${money(severanceThisYear)}` : "";
       const netAfterSev = guaranteedIncome + severanceThisYear - totalSpend;
       if (netAfterSev > 0) {
-        baseNote = `Spend: ${money(totalSpend)}, Gtd Inc: ${money(guaranteedIncome)}${sevPart}, Surplus: ${money(netAfterSev)} reinvested`;
+        baseNote = `Spend: ${money(totalSpend)}, Gtd Inc: ${money(guaranteedIncome)}${supPart}${sevPart}, Surplus: ${money(netAfterSev)} reinvested`;
       } else if (netAfterSev < 0) {
-        baseNote = `Spend: ${money(totalSpend)}, Gtd Inc: ${money(guaranteedIncome)}${sevPart}, Net need: ${money(-netAfterSev)}`;
+        baseNote = `Spend: ${money(totalSpend)}, Gtd Inc: ${money(guaranteedIncome)}${supPart}${sevPart}, Net need: ${money(-netAfterSev)}`;
       } else {
-        baseNote = `Spend: ${money(totalSpend)}, Gtd Inc: ${money(guaranteedIncome)}${sevPart}, Net need: $0`;
+        baseNote = `Spend: ${money(totalSpend)}, Gtd Inc: ${money(guaranteedIncome)}${supPart}${sevPart}, Net need: $0`;
       }
     } else {
       if (age < layoffAge) {
@@ -1385,7 +1388,7 @@ function calculateScenario(inputs) {
           ? `Surplus ${money(net)} added to brokerage`
           : `Deficit ${money(Math.abs(net))} drawn from brokerage`;
         const label = who === "pension" ? "Pension" : (who === "severance" ? "Severance" : `Working (${who})`);
-        baseNote = `${label} – ${flow}${sevPart}`;
+        baseNote = `${label} – ${flow}${supPart}${sevPart}`;
       }
     }
     if (unfundedThisYear > 0) {
@@ -2471,7 +2474,7 @@ function renderChart(r) {
 
   $("chartTitle").textContent = state.tab === "cashflow" ? "Retirement cash flow" : "Portfolio trajectory";
   $("chartSub").textContent = state.tab === "cashflow"
-    ? `Guaranteed income vs spending from age ${firstRetiredAge(r) ?? "—"} · today's dollars`
+    ? `Income vs spending from age ${cashflowStartAge(r) ?? "—"} · today's dollars`
     : `Today's dollars · ${r.rows.length} years · hover for detail`;
 
   renderLegend();
@@ -2480,8 +2483,11 @@ function renderChart(r) {
   else renderPortfolioChart(r);
 }
 
-function firstRetiredAge(r) {
-  const row = r.rows.find(d => d.bothRetired);
+function cashflowStartAge(r) {
+  // Begin at the first year with guaranteed income (pension or FERS supplement)
+  // or the first year both are retired, so an MRA+30 plan shows the years the
+  // supplement is paid even while a spouse still works.
+  const row = r.rows.find(d => d.bothRetired || d.pension > 0 || d.supplement > 0);
   return row ? row.age : null;
 }
 
@@ -2491,14 +2497,19 @@ function renderLegend() {
   const bar = (label, color, dash) => `<span class="legend-item" style="color:${color}"><i class="legend-bar${dash ? " dash" : ""}" style="background:${dash ? "none" : color}"></i><span style="color:var(--muted)">${esc(label)}</span></span>`;
 
   if (state.tab === "cashflow") {
+    const startAge = lastResult ? cashflowStartAge(lastResult) : null;
+    const shown = lastResult ? lastResult.rows.filter(d => d.age >= startAge) : [];
     const parts = [
       item("Pension", "var(--chart-pension)"),
       item("Social Security", "var(--chart-ss)")
     ];
-    if (lastResult && lastResult.rows.some(d => d.supplement > 0)) {
+    if (shown.some(d => d.earned > 0)) {
+      parts.push(item("Salary", "var(--chart-salary)"));
+    }
+    if (shown.some(d => d.supplement > 0)) {
       parts.push(item("FERS supplement", "var(--chart-supplement)"));
     }
-    if (lastResult && lastResult.rows.some(d => d.bothRetired && d.severance > 0)) {
+    if (shown.some(d => d.severance > 0)) {
       parts.push(item("Severance", "var(--chart-severance)"));
     }
     parts.push(bar("Spending", "var(--chart-spend)"), item("Portfolio draw", "var(--gap-swatch)"));
@@ -2726,7 +2737,8 @@ function renderPortfolioChart(r) {
 }
 
 function renderCashflowChart(r) {
-  const rows = r.rows.filter(d => d.bothRetired);
+  const startAge = cashflowStartAge(r);
+  const rows = r.rows.filter(d => d.age >= startAge);
   if (!rows.length) return;
   const n = rows.length;
 
@@ -2737,7 +2749,7 @@ function renderCashflowChart(r) {
   const barW = Math.max(2.5, Math.min(15, band * 0.62));
   ctx.X = i => ctx.padL + (i + 0.5) * band;
 
-  const maxV = Math.max(1, ...rows.map(d => Math.max(d.spend, d.guaranteed + d.severance)));
+  const maxV = Math.max(1, ...rows.map(d => Math.max(d.spend, d.guaranteed + d.severance + d.earned)));
   const step = niceStep(maxV / 4);
   const yMax = Math.max(step, Math.ceil(maxV / step) * step);
   ctx.Y = v => ctx.padT + ctx.plotH - (Math.max(0, v) / yMax) * ctx.plotH;
@@ -2753,6 +2765,7 @@ function renderCashflowChart(r) {
       y0 -= h;
       bars += `<rect x="${x.toFixed(1)}" y="${y0.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, h).toFixed(1)}" rx="1.5" fill="${color}"/>`;
     };
+    seg(d.earned, "var(--chart-salary)");
     seg(d.pension, "var(--chart-pension)");
     seg(d.ss, "var(--chart-ss)");
     seg(d.supplement, "var(--chart-supplement)");
@@ -2770,7 +2783,7 @@ function renderCashflowChart(r) {
     run = [];
   };
   rows.forEach((d, i) => {
-    const income = d.guaranteed + d.severance;
+    const income = d.guaranteed + d.severance + d.earned;
     if (d.spend > income + 1) run.push({ i, spend: d.spend, income: income });
     else flushRun();
   });
@@ -2821,11 +2834,13 @@ function renderCashflowChart(r) {
     dotS.setAttribute("cy", ctx.Y(d.spend).toFixed(1));
     dotS.style.opacity = 1;
 
-    const income = d.guaranteed + d.severance;
+    const income = d.guaranteed + d.severance + d.earned;
     const gap = d.spend - income;
     const gapRow = gap >= 0
       ? `<div class="tip-row"><span>Portfolio draw</span><span>${money(gap)}</span></div>`
       : `<div class="tip-row"><span>Surplus</span><span>${money(-gap)}</span></div>`;
+    const earnRow = d.earned > 0
+      ? `<div class="tip-row"><span>Salary</span><span>${money(d.earned)}</span></div>` : "";
     const sevRow = d.severance > 0
       ? `<div class="tip-row"><span>Severance</span><span>${money(d.severance)}</span></div>` : "";
     const supRow = d.supplement > 0
@@ -2833,6 +2848,7 @@ function renderCashflowChart(r) {
 
     tip.innerHTML = `
       <div class="tip-age">Age ${d.age} · ${d.year}</div>
+      ${earnRow}
       <div class="tip-row"><span>Pension</span><span>${money(d.pension)}</span></div>
       <div class="tip-row"><span>Social Security</span><span>${money(d.ss)}</span></div>
       ${supRow}

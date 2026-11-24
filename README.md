@@ -78,9 +78,9 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
 - **Portfolio chart** — stacked brokerage/TSP areas, a total line, milestone
   markers, the stress window, and hover details. With the stress test on, the
   no-stress path is overlaid as a dashed comparison line.
-- **Cash-flow chart** — guaranteed income (pension + Social Security + the FERS
-  supplement, for MRA+30 plans) against spending from retirement onward, with the
-  portfolio draw shaded.
+- **Cash-flow chart** — income (pension, Social Security, the FERS supplement for
+  MRA+30 plans, and salary while either of you still works) against spending from
+  the pension start onward, with the portfolio draw shaded.
 - **Key moments** — every milestone (layoff, pension start, retirement, SS, TSP
   access, Medicare, mortgage payoff) with the portfolio value at that age. Click
   one to jump to the year in the table.

@@ -269,6 +269,11 @@ two pages match; the theme toggle then updates only the compound page.
     chart, tooltip, banner, hero hint and text summary. VERA is unaffected (it
     already eroded to 62); the deferred and normal branches now share the same
     no-COLA-before-62 rule.
+16. Made the supplement visible per year: each row's note now appends
+    `(incl. supplement $X)`, and the cash-flow chart starts at the first year with
+    pension or supplement income instead of the first fully-retired year. Salary
+    is drawn as its own segment (and counted against spending) so those extra
+    years don't read as portfolio draws.
 
 ## Known assumptions / open items
 
@@ -298,7 +303,8 @@ two pages match; the theme toggle then updates only the compound page.
   **3.8835%**, end at 95 **$4,198,936**.
 - VERA 49/25: **$30,250** nominal → **$20,599** by 62.
 - MRA+30 57/33: **$39,930** nominal → **$34,444** by 62 after 5 years without
-  COLA; FERS supplement **$15,178**/yr from 57 to 62.
+  COLA; FERS supplement **$15,178**/yr from 57 to 62. Rows 57–61 carry
+  `(incl. supplement …)`; the cash-flow chart starts at 57 with salary shaded.
 - Deferred 43/19: **$11,919** at 62.
 - Engine audit (run headless from `index.html`): 57/57 years identical to
   `retirement_gui.py` with rules aligned (no FEHB, no new-job coverage,
