@@ -1116,10 +1116,11 @@
 <dialog id="saveDialog" class="save-dialog">
   <form id="saveForm">
     <h3>Save scenario</h3>
-    <p>Give this plan a name so you can find it later.</p>
+    <p id="saveIntro">Give this plan a name so you can find it later.</p>
     <input id="saveName" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="e.g. Layoff at 46 · VERA">
     <div class="dialog-actions">
-      <button type="submit" class="btn btn-primary">Save</button>
+      <button type="button" class="btn btn-ghost" id="saveNew" hidden>Save as new</button>
+      <button type="submit" class="btn btn-primary" id="savePrimary">Save</button>
       <button type="button" class="btn btn-ghost" id="saveCancel">Cancel</button>
     </div>
   </form>
@@ -1671,6 +1672,7 @@ const state = {
   values: Object.assign({}, DEFAULTS),
   pinned: [],
   saved: [],
+  activeId: null,
   tab: "portfolio",
   filter: "all",
   theme: "light"
@@ -1735,6 +1737,7 @@ function loadState() {
       values: fromHash.v,
       pinned: fromHash.p,
       savedScenarios: fromHash.sv,
+      activeId: fromHash.act,
       tab: fromHash.t,
       filter: fromHash.f,
       theme: fromHash.th
@@ -1767,6 +1770,8 @@ function loadState() {
     if (savedState.tab === "cashflow" || savedState.tab === "portfolio") state.tab = savedState.tab;
     if (["all", "milestones", "shortfalls"].includes(savedState.filter)) state.filter = savedState.filter;
     if (savedState.theme === "dark" || savedState.theme === "light") state.theme = savedState.theme;
+    if (savedState.activeId) state.activeId = String(savedState.activeId);
+    if (!state.saved.some(s => s.id === state.activeId)) state.activeId = null;
     return;
   }
 
@@ -1779,6 +1784,7 @@ function writeState() {
     values: state.values,
     pinned: state.pinned,
     saved: state.saved,
+    activeId: state.activeId,
     tab: state.tab,
     filter: state.filter,
     theme: state.theme
@@ -1789,6 +1795,7 @@ function writeState() {
       v: state.values,
       p: state.pinned,
       sv: state.saved.map(s => ({ id: s.id, n: s.name, a: s.at, v: s.values })),
+      act: state.activeId,
       t: state.tab, f: state.filter, th: state.theme
     });
     history.replaceState(null, "", hash);
@@ -2073,9 +2080,14 @@ function buildControls() {
   $("saveCancel").addEventListener("click", () => $("saveDialog").close());
   $("saveForm").addEventListener("submit", e => {
     e.preventDefault();
-    const name = $("saveName").value;
-    $("saveDialog").close();
-    saveScenario(name);
+    const active = activeSaved();
+    const ok = active
+      ? updateScenario(active.id, $("saveName").value)
+      : saveScenario($("saveName").value);
+    if (ok) $("saveDialog").close();
+  });
+  $("saveNew").addEventListener("click", () => {
+    if (saveScenario($("saveName").value)) $("saveDialog").close();
   });
   $("saveDialog").addEventListener("click", e => {
     if (e.target === $("saveDialog")) $("saveDialog").close();
@@ -3123,12 +3135,22 @@ function defaultScenarioName() {
   return name;
 }
 
+function activeSaved() {
+  return state.activeId ? state.saved.find(s => s.id === state.activeId) || null : null;
+}
+
 function openSaveDialog() {
   if (validate().length) { toast("Fix input errors first"); return; }
   const dlg = $("saveDialog");
   if (dlg.open) return;
+  const active = activeSaved();
   const input = $("saveName");
-  input.value = defaultScenarioName();
+  input.value = active ? active.name : defaultScenarioName();
+  $("saveIntro").textContent = active
+    ? `Updating “${active.name}”. Change the name here to rename the save.`
+    : "Give this plan a name so you can find it later.";
+  $("savePrimary").textContent = active ? "Update" : "Save";
+  $("saveNew").hidden = !active;
   dlg.showModal();
   setTimeout(() => { input.focus(); input.select(); }, 0);
 }
@@ -3136,27 +3158,48 @@ function openSaveDialog() {
 function saveScenario(rawName) {
   if (state.saved.length >= SAVED_LIMIT) {
     toast(`Save limit reached (${SAVED_LIMIT}); delete one first`);
-    return;
+    return false;
   }
   let name = (rawName || "").trim().slice(0, 40) || defaultScenarioName();
   const base = name;
   let n = 2;
   while (state.saved.some(s => s.name === name)) name = `${base} (${n++})`;
 
+  const id = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   state.saved.unshift({
-    id: "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    id: id,
     name: name,
     at: Date.now(),
     values: compactValues(state.values)
   });
+  state.activeId = id;
   renderSaved();
   saveState(true);
   toast(`Saved "${name}"`);
+  return true;
+}
+
+function updateScenario(id, rawName) {
+  const s = state.saved.find(x => x.id === id);
+  if (!s) return false;
+  let name = (rawName || "").trim().slice(0, 40) || s.name;
+  const base = name;
+  let n = 2;
+  while (state.saved.some(x => x.id !== id && x.name === name)) name = `${base} (${n++})`;
+  s.name = name;
+  s.at = Date.now();
+  s.values = compactValues(state.values);
+  state.activeId = id;
+  renderSaved();
+  saveState(true);
+  toast(`Updated "${name}"`);
+  return true;
 }
 
 function loadScenario(id) {
   const s = state.saved.find(x => x.id === id);
   if (!s) return;
+  state.activeId = id;
   state.values = sanitizeValues(s.values);
   applyBirthdate();
   syncAllControls();
@@ -3173,6 +3216,7 @@ function deleteScenario(id) {
   if (!s) return;
   if (!confirm(`Delete "${s.name}"?`)) return;
   state.saved = state.saved.filter(x => x.id !== id);
+  if (state.activeId === id) state.activeId = null;
   renderSaved();
   saveState(true);
   toast("Saved scenario deleted");
@@ -3197,12 +3241,13 @@ function renderSaved() {
     const end = res.rows[res.rows.length - 1];
     const dep = fundedThrough(res.rows);
     const date = new Date(s.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    const isActive = s.id === state.activeId;
     return `
       <div class="saved-row">
         <div class="saved-name">
           <span class="saved-mark">${ICONS.bookmark}</span>
           <div style="min-width:0">
-            <b title="${esc(s.name)}">${esc(s.name)}</b>
+            <b title="${esc(s.name)}">${esc(s.name)}${isActive ? ' <span class="cmp-badge">editing</span>' : ""}</b>
             <small>Saved ${date}</small>
           </div>
         </div>
@@ -3314,6 +3359,7 @@ function clearPins() {
 
 function resetDefaults() {
   state.values = Object.assign({}, DEFAULTS);
+  state.activeId = null;
   applyBirthdate();
   document.querySelectorAll("input[data-key]").forEach(el => {
     el.closest(".val-wrap")?.classList.remove("invalid");

@@ -90,8 +90,9 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   year, or adding/removing the stress test.
 - **Scenario compare** — pin up to four scenarios; they appear as extra lines
   on the chart and side by side in the compare table.
-- **Saved scenarios** — save the current plan under a name, load it later, or
-  delete it. Up to 12 plans are kept with the dashboard state.
+- **Saved scenarios** — save the current plan under a name, load one later, update
+  the loaded plan in place (the Save dialog pre-fills its name and offers
+  **Update**), or delete it. Up to 12 plans are kept with the dashboard state.
 - **Table filters** — all years, milestones only, or shortfalls only (unfunded
   years count as shortfalls).
 - **Dark mode**, copyable text summary, CSV export, and print-friendly styles.

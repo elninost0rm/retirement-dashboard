@@ -162,7 +162,7 @@ All figures are in today's dollars. Balances grow at
 
 ## UI
 
-- **Header:** Save (name dialog), Saved (count + popover library), Pin (compare,
+- **Header:** Save (name/update dialog), Saved (count + popover library), Pin (compare,
   up to 4), Reset, theme toggle.
 - **Hero:** minimum portfolio, portfolio at 95, funded-through age (a year with
   unfunded spending ends the run), real return, brokerage low before 59½,
@@ -308,6 +308,11 @@ two pages match; the theme toggle then updates only the compound page.
     being classed as deferred merely because the window age was still set to 49.
     Precedence is now regular MRA+30, then normal (62/5 or 60/20), then VERA, so a
     57/33 separation reports MRA+30 rather than VERA.
+22. Saving now tracks the **loaded scenario** (`state.activeId`, persisted in the
+    URL and localStorage). The Save dialog pre-fills its name and offers **Update**
+    (overwrite in place, optionally renaming) alongside **Save as new**; the
+    library marks that row `editing`. Previously every save created a new entry —
+    retyping an existing name produced "Name (2)" rather than overwriting.
 
 ## Known assumptions / open items
 
@@ -366,3 +371,7 @@ two pages match; the theme toggle then updates only the compound page.
   portfolio draw $0.
 - Saved scenarios persist across reload, load correctly, and delete; no console
   errors in the tested flows.
+- Save/update flow: a new save becomes the active plan; reopening Save pre-fills
+  its name and updates in place (no duplicate); renaming updates the name;
+  "Save as new" copies it and makes the copy active; the active row shows
+  `editing`; the association survives reload; deleting or resetting clears it.
