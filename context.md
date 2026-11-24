@@ -93,10 +93,10 @@ All figures are in today's dollars. Balances grow at
 - **No COLA before 62** for any regular FERS annuity. An immediate pension is
   frozen in nominal dollars from its start age until 62, then COLA (so its
   today's-dollar value falls each year before 62).
-- **VERA:** only when `layoffYear === veraYear` AND `layoffAge === veraAge` AND
-  service ≥ `veraService`. Starts at the VERA age; nominal, eroding to 62, then
-  COLA. Pays the **FERS Supplement** from `max(pensionStart, mraAge)` to 62 (5 CFR
-  842.503(b)(1): a VERA taken before MRA waits until MRA).
+- **VERA:** when `layoffAge === veraAge` (the window year is derived as the year you
+  turn that age) AND service ≥ `veraService`. Starts at the VERA age; nominal,
+  eroding to 62, then COLA. Pays the **FERS Supplement** from `max(pensionStart,
+  mraAge)` to 62 (5 CFR 842.503(b)(1): a VERA taken before MRA waits until MRA).
 - **MRA+30:** when `layoffAge ≥ mraAge` and service ≥ `mraService`. Starts at the
   layoff age; nominal until 62, then COLA. Also pays the **FERS Supplement**
   from the start age until 62, ≈ `ss_you × service/40`, with no COLA.
@@ -288,6 +288,13 @@ two pages match; the theme toggle then updates only the compound page.
     row shows the value read-only, and the companion field is renamed "Service
     needed at MRA". A fractional MRA rounds to the nearest birthday in the annual
     model. This removes the ability to set an MRA that does not legally exist.
+19. VERA's **window year is now derived** from the VERA age and birth date instead
+    of being a second editable field. Previously the year and age could disagree,
+    and the pension silently fell back to deferred — starting at 62 with no
+    supplement while the rails still showed a VERA age. A deferred fallback now
+    also shows a banner explaining the window ("No VERA in 2041 … set VERA age to
+    54"). The engine computes the window year itself, so saved links cannot carry a
+    stale one.
 
 ## Known assumptions / open items
 
@@ -320,6 +327,9 @@ two pages match; the theme toggle then updates only the compound page.
   supplement from 57; end at 95 **$7,560,986** (was $7,338,075 with no supplement).
 - VERA 54/30: **$36,300** nominal, supplement **$13,798**/yr from 57, end
   **$9,689,489**.
+- Setting **VERA age 54** with a layoff at 54 now classifies as a VERA: pension
+  begins at 54 and the supplement runs 57–62. Setting VERA age 49 with a layoff at
+  54 stays deferred and shows the "No VERA in 2041" banner.
 - MRA+30 57/33: **$39,930** nominal → **$34,444** by 62 after 5 years without
   COLA; FERS supplement **$15,178**/yr from 57 to 62. Rows 57–61 carry
   `(incl. supplement …)`; the cash-flow chart starts at 57 with salary shaded.

@@ -1090,7 +1090,7 @@
           <div class="notes-body">
             Figures are in today's dollars and grow at <b>(1 + nominal return) / (1 + inflation) − 1</b>.
             Service years are calculated from your federal start year. Pension paths: <b>VERA</b> at the VERA
-            age/year with the minimum service (full nominal, eroding to 62, then COLA);
+            age — the window year follows from your birth date — with the required service (full nominal, eroding to 62, then COLA);
             <b>MRA+30</b> at your MRA with the required service (nominal until COLA at 62), plus a FERS
             supplement of Social Security &times; service/40 from MRA to 62 — also paid on a <b>VERA</b>
             taken before MRA, but not until MRA; otherwise
@@ -1155,7 +1155,6 @@ function calculateScenario(inputs) {
   const ssSpouse = Number(inputs.ss_spouse);
   const high3 = Number(inputs.high3);
   const serviceStartYear = Math.trunc(Number(inputs.service_start_year));
-  const veraYear = Math.trunc(Number(inputs.vera_year));
   const veraAge = Math.trunc(Number(inputs.vera_age));
   const veraService = Number(inputs.vera_service);
   const mraAge = Math.trunc(Number(inputs.mra_age));
@@ -1192,6 +1191,8 @@ function calculateScenario(inputs) {
   const tspAccessAge = 59.5;
   const colaAge = 62;
   const layoffYear = currentYear + (layoffAge - currentAge);
+  // The VERA window year is not a choice: it is the year you turn the VERA age.
+  const veraYear = currentYear + (veraAge - currentAge);
   const serviceAtLayoff = Math.max(0, layoffYear - serviceStartYear);
 
   const veraEligible = layoffYear === veraYear && layoffAge === veraAge && serviceAtLayoff >= veraService;
@@ -1618,8 +1619,8 @@ const MONEY_GROUPS = [
   ]},
   { mount: "group-pension", fields: [
     ["service_start_year", "Service start", "year", "Year you began federal service (September 2011). Service years are calculated from this."],
-    ["vera_year", "VERA year", "year", "The early-out window year (2036)."],
-    ["vera_age", "VERA age", "yrs", "Age the VERA is available (49)."],
+    ["vera_age", "VERA age", "yrs", "Age at which the early-out window is available. The window year follows from your birth date."],
+    ["vera_year", "VERA window year", "year", "Derived: the calendar year you turn your VERA age."],
     ["vera_service", "VERA service", "yrs", "Minimum service years for the VERA (25)."],
     ["mra_age", "MRA", "yrs", "Fixed by your birth year — the earliest you can retire with an unreduced annuity without a VERA."],
     ["mra_service", "Service needed at MRA", "yrs", "Years of service required to retire at MRA with an unreduced annuity (30)."],
@@ -1653,7 +1654,6 @@ function sliderSpec(key, unit) {
   if (key === "new_job_gap_months") return { min: 0, max: 24, step: 1 };
   if (key === "severance_months") return { min: 1, max: 12, step: 1 };
   if (key === "service_start_year") return { min: 1980, max: new Date().getFullYear(), step: 1 };
-  if (key === "vera_year") return { min: 2026, max: 2055, step: 1 };
   if (key === "payoff_year") return { min: 2026, max: 2060, step: 1 };
   if (key === "vera_age") return { min: 40, max: 65, step: 1 };
   if (key === "vera_service") return { min: 0, max: 40, step: 1 };
@@ -1862,6 +1862,10 @@ function applyBirthdate() {
   const d = ageDetail(state.values.birthdate);
   if (d) state.values.current_age = d.years;
   state.values.mra_age = fersMraAge(state.values.birthdate);
+  const va = Number(state.values.vera_age);
+  if (isFinite(va)) {
+    state.values.vera_year = new Date().getFullYear() + (va - state.values.current_age);
+  }
 }
 function renderAgeHint() {
   const el = $("ageHint");
@@ -1906,7 +1910,7 @@ function nudgeSlider(el, e) {
 }
 
 // Fields shown read-only because they are derived, not chosen.
-const DERIVED_KEYS = new Set(["mra_age"]);
+const DERIVED_KEYS = new Set(["mra_age", "vera_year"]);
 
 function buildControls() {
   MONEY_GROUPS.forEach(group => {
@@ -2167,6 +2171,22 @@ function buildControls() {
   });
 }
 
+// Read-only values that follow from the birth date / VERA age.
+function syncDerivedValues() {
+  const mraEl = $("v_mra_age");
+  if (mraEl) {
+    const d = fersMraDetail(state.values.birthdate);
+    mraEl.textContent = !d ? "—"
+      : `${d.years}${d.months ? ` yrs ${d.months} mos` : " yrs"}`;
+  }
+  const veraYearEl = $("v_vera_year");
+  if (veraYearEl) {
+    const y = new Date().getFullYear() + (Number(state.values.vera_age) - Number(state.values.current_age));
+    if (isFinite(y)) state.values.vera_year = Math.round(y);
+    veraYearEl.textContent = isFinite(y) ? String(Math.round(y)) : "—";
+  }
+}
+
 function syncAllControls() {
   document.querySelectorAll("input[data-key]").forEach(el => {
     const key = el.dataset.key;
@@ -2193,12 +2213,7 @@ function syncAllControls() {
     $(`v_${s.key}`).textContent = s.fmt === "pct" ? Number(v).toFixed(1) + "%" : String(Math.round(v));
   });
 
-  const mraEl = $("v_mra_age");
-  if (mraEl) {
-    const d = fersMraDetail(state.values.birthdate);
-    mraEl.textContent = !d ? "—"
-      : `${d.years}${d.months ? ` yrs ${d.months} mos` : " yrs"}`;
-  }
+  syncDerivedValues();
 
   $("stressToggle").checked = !!state.values.stress_enabled;
   $("stressBody").hidden = !state.values.stress_enabled;
@@ -2309,6 +2324,7 @@ function render() {
     return;
   }
 
+  syncDerivedValues();
   const result = calculateScenario(state.values);
   lastResult = result;
   updateCoverageNote(result);
@@ -2482,6 +2498,24 @@ function renderBanners(result, errors) {
           <div><b>Pension deferred to ${p.startAge}</b> — reduced by ${p.erosionYears} year(s) of
           inflation from your leave age.</div>
         </div>`);
+      // If the only thing blocking a VERA is the window, say so.
+      const vy = state.values;
+      const vAge = Math.trunc(Number(vy.vera_age));
+      const vSvc = Number(vy.vera_service);
+      const lAge = Math.trunc(Number(vy.layoff_age));
+      const curAge = Number(vy.current_age);
+      const lYear = new Date().getFullYear() + (lAge - curAge);
+      const vYear = new Date().getFullYear() + (vAge - curAge);
+      if (p.serviceYears >= vSvc && lAge !== vAge) {
+        parts.push(`
+          <div class="banner info">
+            <span class="ico">${ICONS.info}</span>
+            <div><b>No VERA in ${lYear}</b> — the VERA window is age ${vAge} (${vYear}) with
+            ${vSvc}+ years of service. You leave at ${lAge} (${lYear}), so the pension is
+            deferred and begins at ${p.startAge}. Set “VERA age” to ${lAge} to model a
+            VERA in that year.</div>
+          </div>`);
+      }
     } else if (p.mode === "mra") {
       parts.push(`
         <div class="banner info">
