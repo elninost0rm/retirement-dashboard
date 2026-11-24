@@ -94,7 +94,8 @@ All figures are in today's dollars. Balances grow at
   frozen in nominal dollars from its start age until 62, then COLA (so its
   today's-dollar value falls each year before 62).
 - **VERA:** when `layoffAge === veraAge` (the window year is derived as the year you
-  turn that age) AND service ≥ `veraService`. Starts at the VERA age; nominal,
+  turn that age) AND service meets OPM's rule — `layoffAge ≥ 50 && service ≥ 20`,
+  or `service ≥ 25`. Starts at the VERA age; nominal,
   eroding to 62, then COLA. Pays the **FERS Supplement** from `max(pensionStart,
   mraAge)` to 62 (5 CFR 842.503(b)(1): a VERA taken before MRA waits until MRA).
 - **MRA+30:** when `layoffAge ≥ mraAge` and service ≥ `mraService`. Starts at the
@@ -295,6 +296,11 @@ two pages match; the theme toggle then updates only the compound page.
     also shows a banner explaining the window ("No VERA in 2041 … set VERA age to
     54"). The engine computes the window year itself, so saved links cannot carry a
     stale one.
+20. Replaced the "VERA service" slider with OPM's statutory rule — qualify with
+    **20 years at age 50+, or 25 years at any age** — and removed the field. The
+    single threshold could deny a legal VERA: at 52 with 22 years the app required
+    25 and fell back to deferred. Boundaries now check exactly: 50/20 and 49/25
+    qualify; 50/19 and 49/24 do not.
 
 ## Known assumptions / open items
 
@@ -330,6 +336,8 @@ two pages match; the theme toggle then updates only the compound page.
 - Setting **VERA age 54** with a layoff at 54 now classifies as a VERA: pension
   begins at 54 and the supplement runs 57–62. Setting VERA age 49 with a layoff at
   54 stays deferred and shows the "No VERA in 2041" banner.
+- VERA service boundaries: 50/20 → VERA, 50/19 → deferred; 49/25 → VERA,
+  49/24 → deferred; 52/22 → VERA (previously denied by the 25-year slider).
 - MRA+30 57/33: **$39,930** nominal → **$34,444** by 62 after 5 years without
   COLA; FERS supplement **$15,178**/yr from 57 to 62. Rows 57–61 carry
   `(incl. supplement …)`; the cash-flow chart starts at 57 with salary shaded.

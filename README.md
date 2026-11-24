@@ -59,7 +59,8 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   greyed-out `Enter amount` prompt, so the published page shows nobody's real
   figures. Type a number (or drag the slider) and the projection updates.
 - **Pension eligibility** — service start year (years are calculated
-  automatically), VERA age/service, the VERA window year (read-only: it is the
+  automatically), VERA age (the VERA service rule is built in: 20 years at 50+,
+  or 25 at any age), the VERA window year (read-only: it is the
   year you turn that age), the MRA (read-only: it comes from your birth date), the
   service needed at MRA, and the normal pension age.
 - **Sliders everywhere** — every dollar, year, age, service, and month field is
@@ -161,7 +162,8 @@ silently absorbed.
   layoff age. The pension multiplier is 1.0% per year, 1.1% at 20+ years.
 - **Pension paths:**
   - **VERA:** when the layoff age equals the VERA age (the window year follows
-    from your birth date) and service meets the minimum. Starts at the VERA age;
+    from your birth date) and service meets OPM's rule — 20 years at age 50+, or
+    25 years at any age. Starts at the VERA age;
     the full nominal amount erodes with inflation until 62, then gets COLA. Also
     pays the **FERS Supplement** from MRA to 62 — not from retirement, so a VERA
     taken at 49 or 54 gets nothing until 57.
