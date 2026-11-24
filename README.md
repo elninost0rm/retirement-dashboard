@@ -59,7 +59,8 @@ Flags: `python serve.py --port 9000`, `python serve.py --no-browser`.
   greyed-out `Enter amount` prompt, so the published page shows nobody's real
   figures. Type a number (or drag the slider) and the projection updates.
 - **Pension eligibility** — service start year (years are calculated
-  automatically), the MRA (read-only: it comes from your birth date), the service
+  automatically), a break-in-service field for time away from federal service,
+  the MRA (read-only: it comes from your birth date), the service
   needed at MRA, and the normal pension age. VERA needs no field of its own:
   leaving at 50+ with 20 years, or with 25 at any age, counts as an early-out.
 - **Sliders everywhere** — every dollar, year, age, service, and month field is
@@ -162,7 +163,9 @@ silently absorbed.
 - All figures are in today's dollars; balances grow at
   `(1 + nominal return) / (1 + inflation) − 1`.
 - **Service years** are calculated from the federal service start year at the
-  layoff age. The pension multiplier is 1.0% per year, 1.1% at 20+ years.
+  layoff age, minus any **break in service** you enter (the break also pauses
+  contributions for that many years, starting now). The pension multiplier is
+  1.0% per year, 1.1% at 20+ years.
 - **Pension paths:**
   - **VERA:** when you separate at 50+ with 20 years, or with 25 years at any age
     (no separate window). Starts at the layoff age;

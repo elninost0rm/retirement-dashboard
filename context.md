@@ -87,8 +87,11 @@ All figures are in today's dollars. Balances grow at
 
 ### Pension
 
-- Service years are **auto-calculated** from `service_start_year` at the layoff
-  year: `serviceAtLayoff = max(0, layoffYear - serviceStartYear)`.
+- **Service years** are calculated from `service_start_year` at the layoff year,
+  minus `service_break_years`: `serviceAtLayoff = max(0, layoffYear -
+  serviceStartYear - serviceBreak)`. A break also pauses contributions for that
+  many years, starting at the current age; health coverage during the break is
+  still assumed (the app has no pre-layoff health model).
 - `nominalPension = high3 × serviceAtLayoff × (serviceAtLayoff < 20 ? 1.0% : 1.1%)`.
 - **No COLA before 62** for any regular FERS annuity. An immediate pension is
   frozen in nominal dollars from its start age until 62, then COLA (so its
@@ -333,6 +336,11 @@ two pages match; the theme toggle then updates only the compound page.
     that can leave you short of both 30 years and a VERA; a mid-career break is
     still approximated by moving Service start later. Validated against the ledger
     with a new 57/19 scenario (57/57 rows).
+25. Added a **Break in service** input. It subtracts years from creditable service
+    and pauses brokerage/TSP contributions for that many years from the current
+    age. This makes the quit-and-return path reachable: at 57 with a 14-year break,
+    service is 19 years → MRA+10; a 13-year break leaves 20 → VERA. Validated with
+    a new break scenario (57/57 rows).
 
 ## Known assumptions / open items
 
@@ -351,9 +359,10 @@ two pages match; the theme toggle then updates only the compound page.
 - MRA+10 uses a **5%-per-year** reduction (the annual approximation of OPM's
   5/12 of 1% per month under 62), so a mid-year birthday can shift it by up to
   about 5%. It assumes the annuity is not postponed.
-- Service is one **continuous span** from Service start to layoff. A mid-career
-  break isn't modeled directly: to approximate it, move Service start later so the
-  years at layoff match the creditable total (the slider caps at the current year).
+- Service is one continuous span minus the **Break in service** years. The break
+  is assumed to start now: creditable service and total contributions are right,
+  but if the real break happens later the contribution timing is approximate.
+  Health coverage during the break is assumed.
 - The **FERS supplement** (VERA and MRA+30) is modeled gross — `ss_you ×
   service/40` from `max(retirement, MRA)` to 62. The earnings test (reduction for
   wages above the annual exempt amount) and any non-civilian service rules are not
@@ -384,6 +393,9 @@ two pages match; the theme toggle then updates only the compound page.
 - MRA+10: 57 with 19 years → pension at 57, $20,900 × 75% = **$15,675** nominal
   (25% reduction), no supplement, FEHB on, severance dimmed; at 58 with 19 years
   the reduction is 20%. 57 with 9 years stays deferred with severance payable.
+- Break in service: at 57, a **14-year break** leaves 19 years → MRA+10 at
+  **$15,675** (contributions paused 39–52); a **13-year break** leaves 20 years →
+  **VERA** at $24,200 with a $9,199 supplement. Both match the ledger 57/57.
 - MRA+30 57/33: **$39,930** nominal → **$34,444** by 62 after 5 years without
   COLA; FERS supplement **$15,178**/yr from 57 to 62. Rows 57–61 carry
   `(incl. supplement …)`; the cash-flow chart starts at 57 with salary shaded.

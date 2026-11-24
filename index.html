@@ -1090,7 +1090,7 @@
           <summary>Model notes &amp; assumptions</summary>
           <div class="notes-body">
             Figures are in today's dollars and grow at <b>(1 + nominal return) / (1 + inflation) − 1</b>.
-            Service years are calculated from your federal start year. Pension paths: <b>VERA</b> when
+            Service years are calculated from your federal start year, minus any break in service. Pension paths: <b>VERA</b> when
             you separate at 50+ with 20 years, or with 25 years at any age (full nominal, eroding
             to 62, then COLA);
             <b>MRA+30</b> at your MRA with the required service (nominal until COLA at 62), plus a FERS
@@ -1159,6 +1159,7 @@ function calculateScenario(inputs) {
   const ssSpouse = Number(inputs.ss_spouse);
   const high3 = Number(inputs.high3);
   const serviceStartYear = Math.trunc(Number(inputs.service_start_year));
+  const serviceBreak = Math.max(0, Number(inputs.service_break_years) || 0);
   const mraAge = Math.trunc(Number(inputs.mra_age));
   const mraService = Number(inputs.mra_service);
   const normalPensionAge = Math.trunc(Number(inputs.normal_pension_age));
@@ -1193,7 +1194,7 @@ function calculateScenario(inputs) {
   const tspAccessAge = 59.5;
   const colaAge = 62;
   const layoffYear = currentYear + (layoffAge - currentAge);
-  const serviceAtLayoff = Math.max(0, layoffYear - serviceStartYear);
+  const serviceAtLayoff = Math.max(0, layoffYear - serviceStartYear - serviceBreak);
 
   // A VERA is folded into the layoff: no separate window age. Leaving with
   // 20 years at 50+ (or 25 at any age) counts as an early-out.
@@ -1340,8 +1341,13 @@ function calculateScenario(inputs) {
     const bothRetired = age >= Math.max(yourRetireAge, spouseRetireAge - 3);
 
     if (age < layoffAge) {
-      brokerage += brokerContrib;
-      tsp += tspContrib;
+      // A mid-career break pauses contributions; the pension service is reduced
+      // separately by the same number of years.
+      const onBreak = age >= currentAge && age < currentAge + serviceBreak;
+      if (!onBreak) {
+        brokerage += brokerContrib;
+        tsp += tspContrib;
+      }
     } else if (!bothRetired) {
       // A working-year deficit draws from the balances instead of letting the
       // brokerage go negative, which would otherwise compound like an asset.
@@ -1606,7 +1612,7 @@ const DEFAULTS = {
   payoff_year: 2049, payoff_month: 6,
   new_job_gap_months: 0, severance_monthly: 0, severance_months: 1, new_job_health: true,
   fehb_enabled: true,
-  service_start_year: 2011,
+  service_start_year: 2011, service_break_years: 0,
   mra_age: 57, mra_service: 30, normal_pension_age: 62
 };
 
@@ -1638,6 +1644,7 @@ const MONEY_GROUPS = [
   ]},
   { mount: "group-pension", fields: [
     ["service_start_year", "Service start", "year", "Year you began federal service (September 2011). Service years are calculated from this."],
+    ["service_break_years", "Break in service", "yrs", "Years away from federal service, starting now. Reduces creditable service and pauses contributions."],
     ["mra_age", "MRA", "yrs", "Fixed by your birth year — the earliest you can retire with an unreduced annuity without a VERA."],
     ["mra_service", "Service needed at MRA", "yrs", "Years of service required to retire at MRA with an unreduced annuity (30)."],
     ["normal_pension_age", "Normal pension age", "yrs", "Deferred/normal pension start age (62)."]
@@ -1670,6 +1677,7 @@ function sliderSpec(key, unit) {
   if (key === "new_job_gap_months") return { min: 0, max: 24, step: 1 };
   if (key === "severance_months") return { min: 1, max: 12, step: 1 };
   if (key === "service_start_year") return { min: 1980, max: new Date().getFullYear(), step: 1 };
+  if (key === "service_break_years") return { min: 0, max: 20, step: 1 };
   if (key === "payoff_year") return { min: 2026, max: 2060, step: 1 };
   if (key === "mra_service") return { min: 0, max: 40, step: 1 };
   if (key === "normal_pension_age") return { min: 55, max: 70, step: 1 };
@@ -2276,7 +2284,7 @@ function validate() {
     "high3", "current_age", "layoff_age", "your_retire_age", "spouse_retire_age",
     "nominal_return", "inflation",
     "payoff_year", "payoff_month", "new_job_gap_months", "severance_monthly", "severance_months",
-    "service_start_year",
+    "service_start_year", "service_break_years",
     "mra_age", "mra_service", "normal_pension_age"
   ];
   required.forEach(k => {
@@ -2288,6 +2296,7 @@ function validate() {
   if (v.normal_pension_age < 50 || v.normal_pension_age > 70) errors.push("Normal pension age should be between 50 and 70.");
   if (v.new_job_gap_months < 0) errors.push("The new-job gap cannot be negative.");
   if (v.severance_monthly < 0) errors.push("Severance cannot be negative.");
+  if (v.service_break_years < 0) errors.push("Break in service cannot be negative.");
   if (v.severance_months < 1 || v.severance_months > 12) errors.push("Severance months must be between 1 and 12.");
 
   if (v.stress_enabled) {
