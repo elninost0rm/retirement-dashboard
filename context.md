@@ -4,12 +4,13 @@ _Last updated: 2026-11-23_
 
 ## What this is
 
-A single-file browser dashboard (`index.html`) built from the original Tkinter app
-`retirement_gui.py`. The financial engine is a JavaScript port of the Python
-`calculate_scenario()` function, with the original hard-coded life assumptions
-now exposed as editable inputs.
+A single-file browser dashboard (`index.html`). The financial engine is a
+JavaScript port of the Python `calculate_scenario()` function from the original
+Tkinter app, with the original hard-coded life assumptions now exposed as
+editable inputs. The Python original has been removed; `index.html` is the
+reference implementation.
 
-No build step or dependencies. The original Tkinter app is untouched.
+No build step or dependencies.
 
 ## Run
 
@@ -17,7 +18,6 @@ No build step or dependencies. The original Tkinter app is untouched.
 - **Direct:** double-click `index.html`.
 - **Local server:** `python serve.py` or `start_dashboard.bat` →
   <http://127.0.0.1:8420/> (stdlib only; flags `--port`, `--no-browser`).
-- **Original desktop app:** `retirement_gui.py` still runs independently.
 
 ## Hosting
 
@@ -29,9 +29,8 @@ No build step or dependencies. The original Tkinter app is untouched.
 - **Working rule:** every change to this project ends with a commit and a push
   to `origin/main`. All edits are made through the agent interface; nothing is
   edited on github.com, so `git pull` is not normally needed.
-- `build/` and `dist/` are gitignored. The old PyInstaller output (~22 MB) and
-  its `.spec`/`.bat` build files were deleted; the desktop app still runs from
-  source with `python retirement_gui.py`.
+- `build/` and `dist/` are gitignored. The old PyInstaller output (~22 MB), its
+  `.spec`/`.bat` build files, and the original Python app have been deleted.
 - Because the site is public, the defaults in `index.html` are world-readable.
   Saved scenarios stay in the visitor's own browser (`localStorage`) and in
   shared `#s=…` links; they are never uploaded.
@@ -45,7 +44,6 @@ No build step or dependencies. The original Tkinter app is untouched.
 | `serve.py` | Optional stdlib HTTP server; opens the browser. |
 | `start_dashboard.bat` | Windows launcher for `serve.py`. |
 | `README.md` | User-facing docs. |
-| `retirement_gui.py` | Original Tkinter app, unchanged. |
 | `context.md` | This file. |
 | `.gitignore` | Excludes Python caches and any future build output. |
 
@@ -268,8 +266,8 @@ two pages match; the theme toggle then updates only the compound page.
     calculator. Separate pages (`index.html`, `compound.html`) sharing design
     tokens and theme; the Python original is untouched.
 12. Deleted the old PyInstaller output (`build/`, `dist/`, ~22 MB) plus
-    `retirement_gui.spec` and `build_exe.bat`. `retirement_gui.py` is kept as the
-    reference implementation; it still runs from source.
+    `retirement_gui.spec` and `build_exe.bat`. `retirement_gui.py` was kept at the
+    time as the reference implementation (later removed — see item 26).
 13. Current age now comes from a **birth date** field (default 1987-08-14) read
     against the computer clock; the age slider was removed. The engine still uses
     whole years, and `current_age` is derived, never edited directly.
@@ -341,6 +339,9 @@ two pages match; the theme toggle then updates only the compound page.
     age. This makes the quit-and-return path reachable: at 57 with a 14-year break,
     service is 19 years → MRA+10; a 13-year break leaves 20 → VERA. Validated with
     a new break scenario (57/57 rows).
+26. Deleted the original `retirement_gui.py` and its `__pycache__`. `index.html`
+    is now the only engine; docs and the engine header comment no longer point at
+    the Python app.
 
 ## Known assumptions / open items
 
@@ -400,11 +401,11 @@ two pages match; the theme toggle then updates only the compound page.
   COLA; FERS supplement **$15,178**/yr from 57 to 62. Rows 57–61 carry
   `(incl. supplement …)`; the cash-flow chart starts at 57 with salary shaded.
 - Deferred 43/19: **$11,919** at 62.
-- Engine audit (run headless from `index.html`): 57/57 years identical to
-  `retirement_gui.py` with rules aligned (no FEHB, no new-job coverage,
-  `aca == medicare`), and 57/57 identical to a ledger rewritten from these rules
-  in 8 scenarios (default, VERA, MRA+30, gap+severance, blank+gap, stress,
-  negative real return, overspend).
+- Engine audit (run headless from `index.html`): 57/57 years identical to an
+  independent Python ledger rewritten from these rules, in 10 scenarios (default,
+  VERA, MRA+30, MRA+10, MRA+10 with a 14-year break, gap+severance, blank+gap,
+  stress, negative real return, overspend). The Python desktop app that the engine
+  was originally ported from has been removed.
 - Overspend probe (age 50, $1k balances, $150k spend): balances clamp at $0 and
   $5,252,063 is reported unfunded; no negative balances anywhere.
 - Severance $5,016/mo × 12 with $60,192 spend: note shows

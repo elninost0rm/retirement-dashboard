@@ -1,9 +1,9 @@
 # Retirement Flexibility Calculator — Web Dashboard
 
-A browser dashboard built from `retirement_gui.py`. The core balance engine is a
-faithful port, and the assumptions that used to be hard-coded are now editable:
-pension eligibility paths, service start, mortgage payoff date, the Medicare
-phase-in, and a new-job gap/severance.
+A browser dashboard whose core balance engine began as a faithful port of an
+earlier Python desktop app. The assumptions that used to be hard-coded are now
+editable: pension eligibility paths, service start, mortgage payoff date, the
+Medicare phase-in, and a new-job gap/severance.
 
 ## Live version
 
@@ -156,7 +156,6 @@ silently absorbed.
 | `compound.html` | Compounding / withdrawal / safe-rate calculator, same design, own tabs. |
 | `serve.py` | Optional local server that opens the dashboard in your browser. |
 | `start_dashboard.bat` | Windows launcher for `serve.py`. |
-| `retirement_gui.py` | Original Tkinter desktop app, unchanged. |
 
 ## Model assumptions
 
